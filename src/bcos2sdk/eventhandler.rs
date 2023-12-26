@@ -88,7 +88,8 @@ impl EventHandler {
     ) {
         //注册回调的入口
         self.worker
-            .lock().unwrap()
+            .lock()
+            .unwrap()
             .handlemanager
             .set_handle(&(CHANNEL_PACK_TYPE::EVENT_LOG_PUSH as u16), eventcallback);
 

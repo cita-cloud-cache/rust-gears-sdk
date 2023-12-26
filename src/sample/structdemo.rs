@@ -151,7 +151,7 @@ pub fn demo(cli: &Cli) -> Result<(), KissError> {
     复杂结构很绕，应先熟读相关代码，原则上应保持合约接口尽量简单，最多到数组和结构体，不要搞嵌套
     */
     //按abi构造tuple的字段类型列表
-    let user_param_type = vec![Box::new(ParamType::String), Box::new(ParamType::Uint(256))];
+    let user_param_type = vec![ParamType::String, ParamType::Uint(256)];
     //这是数据,纯字符串数组，里面包含了特殊字符，确保特殊字符可以上链
     let user_in_str = vec!["pet\"288".to_string(), "314".to_string()];
     //结合数据和类型，编码成token数组
@@ -168,7 +168,7 @@ pub fn demo(cli: &Cli) -> Result<(), KissError> {
 
     println!("\n-----------------addUsers (multi) with param tokens--------------------------\n");
     //按abi构造tuple的字段类型列表
-    let user_param_type = vec![Box::new(ParamType::String), Box::new(ParamType::Uint(256))];
+    let user_param_type = vec![ParamType::String, ParamType::Uint(256)];
     //addusers的第一个参数是user数组
     let mut users: Vec<Token> = vec![];
 

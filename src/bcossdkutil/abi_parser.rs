@@ -66,11 +66,11 @@ impl ABIParser {
 
     ///解析结构体参数类型，type是 tuple,每个参数都是component
     pub fn parse_tuple_params(input: &JsonValue) -> ParamType {
-        let mut tupleparams: Vec<Box<ParamType>> = vec![];
+        let mut tupleparams: Vec<ParamType> = vec![];
         for c in input["components"].as_array().unwrap() {
             //let typename = c["type"].as_str().unwrap();
             let paramtype = ABIParser::parse_param_type(c, "").unwrap();
-            tupleparams.push(Box::new(paramtype));
+            tupleparams.push(paramtype);
         }
         let tupleparam = ParamType::Tuple(tupleparams);
         tupleparam

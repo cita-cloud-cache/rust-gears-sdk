@@ -8,18 +8,19 @@
   @date: 2021-07
 */
 #![allow(
-clippy::unreadable_literal,
-clippy::upper_case_acronyms,
-dead_code,
-non_camel_case_types,
-non_snake_case,
-non_upper_case_globals,
-overflowing_literals,
-unused_variables,
-unused_assignments
+    clippy::unreadable_literal,
+    clippy::upper_case_acronyms,
+    dead_code,
+    non_camel_case_types,
+    non_snake_case,
+    non_upper_case_globals,
+    overflowing_literals,
+    unused_variables,
+    unused_assignments
 )]
 
 use std::convert::From;
+use std::time::Instant;
 
 //#[macro_use]
 use lazy_static::lazy_static;
@@ -28,8 +29,8 @@ use wedpr_l_crypto_signature_sm2::WedprSm2p256v1;
 use wedpr_l_libsm::sm2::signature::Signature as WEDPRSM2Signature;
 use wedpr_l_utils::traits::Signature;
 
-use crate::bcossdkutil::accountutil::{BcosAccount, EcdsaAccountUtil, IBcosAccountUtil};
 use crate::bcossdkutil::accountutil::GMAccountUtil;
+use crate::bcossdkutil::accountutil::{BcosAccount, EcdsaAccountUtil, IBcosAccountUtil};
 use crate::bcossdkutil::kisserror::{KissErrKind, KissError};
 
 ///secp256原始方式的签名串, * Ecdsa的签名结构和国密略有不同,国密的v直接就是公钥
@@ -227,9 +228,9 @@ lazy_static! {
 impl ICommonSigner for CommonSignerWeDPR_SM2 {
     fn sign(&self, data: Vec<u8>) -> Result<CommonSignature, KissError> {
         //let SM2SIGHER1:WedprSm2p256v1 = WedprSm2p256v1::default();
-        let start = time::now();
+        let start = Instant::now();
         let result = SM2SIGHER.sign(&self.account.privkey, &data);
-        let end = time::now();
+        let end = Instant::now();
         printlnex!("sign data use time {:?}", (end - start));
         match result {
             Ok(s) => {
@@ -286,13 +287,13 @@ pub fn test_common_sign() {
     );
     let sp = Secp256Signature::to_electrum(&s2.to_vec());
     /*
-     let sig = ParityEcdsaSignature::from_electrum(sp.as_slice());
-     let recoverresult = publickey::recover(&sig, &data).unwrap();
-     println!(
-     "recover by ecdsa ,pubkey len {}, {:?}",
-     recoverresult.as_bytes().len(),
-     recoverresult.as_bytes()
-     );*/
+    let sig = ParityEcdsaSignature::from_electrum(sp.as_slice());
+    let recoverresult = publickey::recover(&sig, &data).unwrap();
+    println!(
+    "recover by ecdsa ,pubkey len {}, {:?}",
+    recoverresult.as_bytes().len(),
+    recoverresult.as_bytes()
+    );*/
 
     let s = CommonSignature::from_vec(&s2.to_vec());
 

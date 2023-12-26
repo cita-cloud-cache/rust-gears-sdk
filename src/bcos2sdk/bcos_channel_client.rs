@@ -18,7 +18,7 @@ use crate::bcossdkutil::bufferqueue::BufferQueue;
 use crate::bcossdkutil::kisserror::{KissErrKind, KissError};
 use crate::{kisserr, printlnex};
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 ///用接口抽象国密和非国密SSL底层实现，
 /// 底层只关注对SSL或GMSSL的API调用，暴露几个简单的接口
@@ -120,8 +120,8 @@ impl BcosChannelClient {
     /// 按配置的超时时间读socket
     pub fn try_recv(&mut self) -> Result<Vec<u8>, KissError> {
         let mut i = 0;
-        let start = time::now();
-        while time::now() - start < chrono::Duration::seconds(self.config.timeout as i64) {
+        let start = Instant::now();
+        while Instant::now() - start < Duration::from_secs(self.config.timeout as u64) {
             let res = self.recv()?;
             //println!(">> try recv {}", res.len());
             if res.len() > 0 {

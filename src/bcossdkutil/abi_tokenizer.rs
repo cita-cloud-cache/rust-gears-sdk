@@ -41,7 +41,7 @@ pub trait ABITokenizer {
     /// 解析出一个结构体tuple
     fn tokenize_struct_by_str_array(
         paramstr_array: &Vec<String>,
-        param: &Vec<Box<ParamType>>,
+        param: &Vec<ParamType>,
     ) -> Result<Vec<Token>, ABIError> {
         let mut result: Vec<Token> = vec![];
         let mut params = param.iter();
@@ -57,10 +57,7 @@ pub trait ABITokenizer {
     }
     /// Tried to parse a struct as a vector of tokens
     /// 传入的是('pet288',"314")这样的字符串文本
-    fn tokenize_struct(
-        value: &str,
-        paramtypes: &Vec<Box<ParamType>>,
-    ) -> Result<Vec<Token>, ABIError> {
+    fn tokenize_struct(value: &str, paramtypes: &Vec<ParamType>) -> Result<Vec<Token>, ABIError> {
         let inputstr = value.trim_start_matches("(");
         let inputstr = inputstr.trim_end_matches(")");
 

@@ -18,7 +18,12 @@ impl Bcos3sdkIni {
         };
         let confres = Ini::load_from_file(config_file);
         if confres.is_err() {
-            return kisserr!(KissErrKind::EFormat,"load config file error: {},{:?}",config_file,confres.err());
+            return kisserr!(
+                KissErrKind::EFormat,
+                "load config file error: {},{:?}",
+                config_file,
+                confres.err()
+            );
         }
         let config = confres.unwrap();
         let peersseg = config.section(Some("peers"));

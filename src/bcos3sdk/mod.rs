@@ -8,8 +8,8 @@
   @date: 2021-07
 */
 pub mod bcos3client;
+pub mod bcos3sdk_ini;
 pub mod bcos3sdkamop;
 pub mod bcos3sdkfuture;
 pub mod bcos3sdkresponse;
 pub mod bcos3sdkwrapper;
-pub mod bcos3sdk_ini;

@@ -121,7 +121,7 @@ pub fn demo(cli: &Cli) {
     let totalToken = decodereuslt.get(0);
     let total = totalToken.unwrap();
 
-    let index = total.clone().to_uint().unwrap() - 2;
+    let index = total.clone().into_uint().unwrap() - 2;
     println!("get index = {}", index);
     let callvalue = bcossdk
         .call(&contract, &to_address, "get", &[index.to_string()])

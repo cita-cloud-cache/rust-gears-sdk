@@ -24,7 +24,7 @@ use lazy_static::lazy_static;
 use serde_json::json;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::sync::mpsc::Sender;
 
@@ -127,7 +127,7 @@ pub fn getNodeVersionPack() -> Option<ChannelPack> {
 
 ///每3秒钟发一次heartbeat
 async fn heart_beat_thread(worker_arc: BcosChannelWorkerArc) {
-    let mut last_heartbeat_time = time::now() - chrono::Duration::seconds(10);
+    let mut last_heartbeat_time = Instant::now() - Duration::from_secs(10);
 
     loop {
         tokio::time::sleep(Duration::from_millis(100)).await;
@@ -135,12 +135,12 @@ async fn heart_beat_thread(worker_arc: BcosChannelWorkerArc) {
             break;
         }
 
-        if time::now() - last_heartbeat_time < chrono::Duration::seconds(5) {
+        if Instant::now() - last_heartbeat_time < Duration::from_secs(5) {
             continue;
         }
         //let heartbeatpack = make_channel_pack(CHANNEL_PACK_TYPE::HEART_BEAT, "");
         let heartbeatpack = getNodeVersionPack();
-        last_heartbeat_time = time::now();
+        last_heartbeat_time = Instant::now();
         println!(
             "heartbeat send {:?}",
             heartbeatpack.as_ref().unwrap().detail()

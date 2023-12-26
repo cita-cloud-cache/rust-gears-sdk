@@ -21,9 +21,9 @@
 extern crate libloading;
 
 use std::convert::From;
-use std::{env, thread};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
+use std::{env, thread};
 
 use libc::c_void;
 use libloading::{Library, Symbol};
@@ -431,9 +431,7 @@ pub fn test_ssl_native() {
                 println!("data: {}", String::from_utf8(p.data).unwrap());
 
                 break;
-
             }
-
         }
         thread::sleep(Duration::from_millis(300));
     }

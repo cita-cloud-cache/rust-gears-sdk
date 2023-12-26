@@ -36,7 +36,7 @@ use crate::{kisserr, printlnex};
 use ethabi::Token;
 use ethereum_types::U256;
 use serde_json::{json, Value as JsonValue};
-use time::Tm;
+use std::time::{Duration, Instant};
 
 #[derive()]
 pub struct Bcos2Client {
@@ -48,7 +48,7 @@ pub struct Bcos2Client {
     //重要：当前sdk实例采用的hash算法，如keccak,国密等，当前客户端的编解码，签名都必须基于相同的hash算法
     //主要牵涉： account生成和加载，transaction签名，abi编解码
     pub hashtype: HashType,
-    pub updateblocknum_tick: Tm,
+    pub updateblocknum_tick: Instant,
     pub lastblocknum: u32,
 }
 //unsafe impl Send for BcosSDK{}
@@ -114,7 +114,7 @@ impl Bcos2Client {
             ecdsasigner: ecdsasigner.clone(),
             hashtype: hashtype.clone(),
             //默认初始化为500秒前，以便第一次一定会去取一下blocknum
-            updateblocknum_tick: time::now() - chrono::Duration::seconds(500),
+            updateblocknum_tick: Instant::now() - Duration::from_secs(500),
             lastblocknum: 0,
         })
     }
