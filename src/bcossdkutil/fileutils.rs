@@ -92,6 +92,5 @@ pub fn write_all(fullpath: &str, data: Vec<u8>) -> Result<(), KissError> {
 }
 
 pub fn is_file_exist(fullpath: &str) -> bool {
-    let res = Path::new(fullpath).exists();
-    return res;
+    Path::new(fullpath).exists()
 }

@@ -11,16 +11,13 @@ pub extern "C" fn amop_sub_callback(
     resp: *const bcos_sdk_c_struct_response,
 ) {
     unsafe {
-        let mut endpointStr = "".to_string();
-        let mut seqStr = "".to_string();
+        let mut endpointStr = String::new();
+        let mut seqStr = String::new();
         if !endpoint.is_null() {
-            endpointStr = CStr::from_ptr(endpoint.clone())
-                .to_str()
-                .unwrap()
-                .to_string();
+            endpointStr = CStr::from_ptr(endpoint).to_str().unwrap().to_string();
         }
         if !seq.is_null() {
-            seqStr = CStr::from_ptr(seq.clone()).to_str().unwrap().to_string();
+            seqStr = CStr::from_ptr(seq).to_str().unwrap().to_string();
         }
         let response = Bcos3SDKResponse::from_callback(resp);
         //println!("endpoint {},seq {}", endpointStr, seqStr);

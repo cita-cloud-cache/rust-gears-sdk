@@ -96,7 +96,7 @@ pub fn deploy(cli: &Cli) -> Result<(), KissError> {
 pub fn sendtx(cli: &Cli) -> Result<(), KissError> {
     //将cmd和param拼在一起，作为新的args，给到StructOpt去解析（因为第一个参数总是app名）
     let mut cmdparams: Vec<String> = vec![cli.cmd.clone()];
-    cmdparams.append(&mut cli.params.clone());
+    cmdparams.extend_from_slice(&cli.params);
     let opt: OptContract = StructOpt::from_iter(cmdparams.iter());
     let configfile = cli.default_configfile();
     let mut bcossdk = Bcos2Client::new_from_config(configfile.as_str())?;
@@ -150,7 +150,7 @@ pub fn sendtx(cli: &Cli) -> Result<(), KissError> {
 pub fn call(cli: &Cli) -> Result<(), KissError> {
     //将cmd和param拼在一起，作为新的args，给到StructOpt去解析（因为第一个参数总是app名）
     let mut cmdparams: Vec<String> = vec![cli.cmd.clone()];
-    cmdparams.append(&mut cli.params.clone());
+    cmdparams.extend_from_slice(&cli.params);
     let opt: OptContract = StructOpt::from_iter(cmdparams.iter());
     let configfile = cli.default_configfile();
     let mut bcossdk = Bcos2Client::new_from_config(configfile.as_str())?;

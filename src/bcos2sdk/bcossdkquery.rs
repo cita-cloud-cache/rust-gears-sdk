@@ -50,7 +50,7 @@ pub fn json_hextoint(v: &JsonValue) -> Result<i32, KissError> {
             }
         }
         _ => {
-            return kisserr!(KissErrKind::EFormat, "result format error {:?}", v);
+            kisserr!(KissErrKind::EFormat, "result format error {:?}", v)
         }
     }
 }
@@ -286,10 +286,10 @@ impl Bcos2Client {
             }
             return Ok(v);
         }
-        return kisserr!(
+        kisserr!(
             KissErrKind::ENetwork,
             "getTransactionReceipt timeout or missing"
-        );
+        )
     }
 
     ///https://fisco-bcos-documentation.readthedocs.io/zh_CN/latest/docs/api.html#gettransactionreceiptbyhashwithproof

@@ -5,6 +5,7 @@ C语言sdk封装参见：https://github.com/FISCO-BCOS/bcos-c-sdk
 CPP客户端实现参见：https://github.com/FISCO-BCOS/bcos-cpp-sdk
 
  */
+#![allow(clippy::missing_safety_doc)]
 extern crate libc;
 
 //use std::ffi::CStr;
@@ -639,10 +640,10 @@ use crate::bcos3sdk::bcos3sdkwrapper::bcos3sdk_def::{
 pub unsafe fn init_bcos3sdk_lib(sdk_cfgfile: &str) -> *const c_void {
     unsafe {
         let sdk = bcos_sdk_create_by_config_file(str2p!(sdk_cfgfile));
-        if sdk == 0 as *const c_void {
+        if sdk.is_null() {
             return sdk;
         }
         bcos_sdk_start(sdk);
-        return sdk;
+        sdk
     }
 }

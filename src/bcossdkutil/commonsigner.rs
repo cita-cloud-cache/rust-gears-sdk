@@ -29,8 +29,9 @@ use wedpr_l_crypto_signature_sm2::WedprSm2p256v1;
 use wedpr_l_libsm::sm2::signature::Signature as WEDPRSM2Signature;
 use wedpr_l_utils::traits::Signature;
 
-use crate::bcossdkutil::accountutil::GMAccountUtil;
-use crate::bcossdkutil::accountutil::{BcosAccount, EcdsaAccountUtil, IBcosAccountUtil};
+use crate::bcossdkutil::accountutil::{
+    BcosAccount, EcdsaAccountUtil, GMAccountUtil, IBcosAccountUtil,
+};
 use crate::bcossdkutil::kisserror::{KissErrKind, KissError};
 
 ///secp256原始方式的签名串, * Ecdsa的签名结构和国密略有不同,国密的v直接就是公钥
@@ -52,7 +53,7 @@ impl CommonSignature {
             hex::encode(&self.v)
         )
     }
-    pub fn from_vec(data: &Vec<u8>) -> Self {
+    pub fn from_vec(data: &[u8]) -> Self {
         let r_ = data[0..32].to_vec();
         let s_ = data[32..64].to_vec();
         let v_ = data[64..].to_vec();
@@ -71,10 +72,10 @@ impl CommonSignature {
         }
     }
     pub fn to_vec(&self) -> Vec<u8> {
-        let mut buffer: Vec<u8> = vec![];
-        buffer.append(&mut self.r.clone());
-        buffer.append(&mut self.s.clone());
-        buffer.append(&mut self.v.clone());
+        let mut buffer: Vec<u8> = Vec::new();
+        buffer.extend_from_slice(&self.r);
+        buffer.extend_from_slice(&self.s);
+        buffer.extend_from_slice(&self.v);
         buffer
     }
 }
@@ -88,7 +89,7 @@ impl Secp256Signature {
     ///bcos不需要支持魔术数字27以及chainid,这里的逻辑不重要了
     pub fn make_stand_v(v: u64) -> u64 {
         match v {
-            v if v >= 27 && v <= 28 => v - 27,
+            v if (27..=28).contains(&v) => v - 27,
             v if v >= 35 => (v - 1) % 2,
             _ => 4,
         }
@@ -97,9 +98,9 @@ impl Secp256Signature {
     ///bcos不需要支持魔术数字27以及chainid,这里的逻辑不太重要了
     pub fn adjust_v_value(v: u64) -> u64 {
         if v != 4 {
-            v as u64 + 27
+            v + 27
         } else {
-            v as u64
+            v
         }
     }
 
@@ -111,8 +112,8 @@ impl Secp256Signature {
         }
     }
     //如果v=0/1，强行加个27,返回一个副本，不修改本地数据
-    pub fn to_electrum(data: &Vec<u8>) -> Vec<u8> {
-        let mut vout = data.clone();
+    pub fn to_electrum(data: &[u8]) -> Vec<u8> {
+        let mut vout = data.to_owned();
         if vout[64] <= 1 {
             vout[64] += 27;
         }
@@ -197,14 +198,13 @@ impl ICommonSigner for CommonSignerWeDPR_Secp256 {
 }
 
 impl CommonSignerWeDPR_Secp256 {
-    fn new(key: &Vec<u8>) -> CommonSignerWeDPR_Secp256 {
+    fn new(key: &[u8]) -> CommonSignerWeDPR_Secp256 {
         let mut signer = CommonSignerWeDPR_Secp256::default();
-        signer.key_from_bytes(&key.as_slice());
+        signer.key_from_bytes(key);
         signer
     }
     pub fn key_from_bytes(&mut self, keybytes: &[u8]) {
-        let acc = EcdsaAccountUtil::default().from_privkey_bytes(&keybytes.to_vec());
-        self.account = acc.unwrap();
+        self.account = EcdsaAccountUtil::from_privkey_bytes(keybytes).unwrap();
     }
     pub fn key_from_hexstr(&mut self, hextext: &str) {
         let prikey_fix = hex::decode(hextext);
@@ -252,9 +252,7 @@ impl CommonSignerWeDPR_SM2 {
         signer
     }
     pub fn key_from_bytes(&mut self, keybytes: &[u8]) {
-        self.account = GMAccountUtil::default()
-            .from_privkey_bytes(&keybytes.to_vec())
-            .unwrap();
+        self.account = GMAccountUtil::from_privkey_bytes(keybytes).unwrap();
     }
     pub fn key_from_hexstr(&mut self, hextext: &str) {
         let prikey_fix = hex::decode(hextext).unwrap();
@@ -311,9 +309,9 @@ pub fn test_gm_sign() {
     let signresult1 = signer.sign(data.as_bytes().to_vec());
     let sig = signresult.unwrap();
     println!("account detail: {:?}", sm2signer.account.to_hexdetail());
-    println!("GM Sign Hex = {:?}", hex::encode(&sig.to_vec().as_slice()));
+    println!("GM Sign Hex = {:?}", hex::encode(sig.to_vec().as_slice()));
 
-    let sigsm2 = WEDPRSM2Signature::bytes_decode(&sig.to_vec().as_slice()).unwrap();
+    let sigsm2 = WEDPRSM2Signature::bytes_decode(sig.to_vec().as_slice()).unwrap();
     println!("sm2 sig {:?}", sigsm2);
     println!(
         "sm sig is r:{:?},s{:?},v:{:?}({})",

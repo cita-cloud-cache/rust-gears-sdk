@@ -43,15 +43,14 @@ impl Bcos3SDKFuture {
     pub fn create(seq: u64, name: &str, desc: &str) -> Self {
         let (tx, rx) = mpsc::channel();
 
-        let future_context = Bcos3SDKFuture {
-            seq: seq,
+        Bcos3SDKFuture {
+            seq,
             name: name.to_string(),
             desc: desc.to_string(),
             timeout: 5,
-            tx: tx,
-            rx: rx,
-        };
-        future_context
+            tx,
+            rx,
+        }
     }
 
     //和C结构体指针互转，裸指针逻辑
@@ -65,11 +64,11 @@ impl Bcos3SDKFuture {
     //* 唯一比较安全的可能是用u64，指针本身就是u64值传递，然后再用这个u64值来查找对应关系
     //* 总之，unsafe，小心！
     pub fn to_c_ptr(c: &Self) -> *const c_void {
-        return c as *const Bcos3SDKFuture as *const c_void;
+        c as *const Bcos3SDKFuture as *const c_void
     }
 
     pub fn from_c_ptr(ptr: *const c_void) -> *const Bcos3SDKFuture {
-        return ptr as *const Bcos3SDKFuture;
+        ptr as *const Bcos3SDKFuture
     }
 
     pub fn display(&self) {
@@ -92,7 +91,7 @@ impl Bcos3SDKFuture {
         }
     }
     pub fn fire(&self, resp: &Bcos3SDKResponse) {
-        let res = self.tx.send(resp.clone());
+        let _ = self.tx.send(resp.clone());
     }
 
     pub fn wait(&self) -> Result<Bcos3SDKResponse, KissError> {
@@ -102,11 +101,9 @@ impl Bcos3SDKFuture {
             .recv_timeout(std::time::Duration::from_secs(self.timeout));
         //println!("wait res {:?}",&res);
         match res {
-            Ok(v) => {
-                return Ok(v);
-            }
+            Ok(v) => Ok(v),
             Err(e) => {
-                return kisserrcode!(KissErrKind::ETimeout, -1, "timeout");
+                kisserrcode!(KissErrKind::ETimeout, -1, "timeout")
             }
         }
     }

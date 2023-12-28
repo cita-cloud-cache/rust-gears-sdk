@@ -56,8 +56,8 @@ impl ABIParser {
         let abitext = String::from_utf8(content).unwrap();
         let abiobj: JsonValue = serde_json::from_str(abitext.as_str()).unwrap();
         let mut parser = ABIParser {
-            abitext: abitext,
-            abiobj: abiobj,
+            abitext,
+            abiobj,
             events: vec![],
         };
         parser.parse();
@@ -72,15 +72,14 @@ impl ABIParser {
             let paramtype = ABIParser::parse_param_type(c, "").unwrap();
             tupleparams.push(paramtype);
         }
-        let tupleparam = ParamType::Tuple(tupleparams);
-        tupleparam
+        ParamType::Tuple(tupleparams)
     }
 
     ///根据参数的type，构建ParamType对象，spectypename的意思是由调用者指定type名字
     /// 例如 type是tuple[],实际上按tuple解析成类似 (string,uint256)[]这样的形式，就需要指定spectypename= 'tuple'
     pub fn parse_param_type(input: &JsonValue, spectypename: &str) -> Result<ParamType, KissError> {
         let mut typename: String = spectypename.trim().to_string();
-        if typename.len() == 0 {
+        if typename.is_empty() {
             let typenameOpt = input["type"].as_str();
             typename = match typenameOpt {
                 Some(s) => s.to_string(),
@@ -99,21 +98,21 @@ impl ABIParser {
             "tuple" => ABIParser::parse_tuple_params(input),
             "uint" => ParamType::Uint(256),
             s if s.starts_with("int") => {
-                let len = usize::from_str_radix(&s[3..], 10).unwrap();
+                let len = s[3..].parse::<usize>().unwrap();
                 ParamType::Int(len)
             }
             s if s.starts_with("uint") => {
-                let len = usize::from_str_radix(&s[4..], 10).unwrap();
+                let len = s[4..].parse::<usize>().unwrap();
                 ParamType::Uint(len)
             }
             s if s.starts_with("bytes") => {
-                let len = usize::from_str_radix(&s[5..], 10).unwrap();
+                let len = s[5..].parse::<usize>().unwrap();
                 ParamType::FixedBytes(len)
             }
             s if s.ends_with(']') => {
                 //数组类型，类似string[],string[3],tuple[]等
-                let items: Vec<&str> = s.split("[").collect();
-                let paramtype = ABIParser::parse_param_type(input, &items[0]).unwrap();
+                let items: Vec<&str> = s.split('[').collect();
+                let paramtype = ABIParser::parse_param_type(input, items[0]).unwrap();
                 ParamType::Array(Box::new(paramtype))
             }
             _ => {
@@ -128,7 +127,7 @@ impl ABIParser {
         let mut params: Vec<EventParam> = vec![];
         for input in inputlist.as_array().unwrap() {
             let orgtype = input["type"].as_str().unwrap();
-            let paramtype = ABIParser::parse_param_type(&input, "").unwrap();
+            let paramtype = ABIParser::parse_param_type(input, "").unwrap();
             let param = EventParam {
                 name: input["name"].as_str().unwrap().to_string(),
                 indexed: input["indexed"].as_bool().unwrap(),
@@ -145,7 +144,7 @@ impl ABIParser {
         let event = Event {
             name: name.to_string(),
             inputs: self.parse_event_inputs(&item["inputs"]),
-            anonymous: anonymous,
+            anonymous,
         };
         let event_abi_utils = EventABIUtils::new(&HashType::WEDPR_KECCAK);
         let sig = event_abi_utils.event_signature(&event);
@@ -158,13 +157,9 @@ impl ABIParser {
     pub fn parse(&mut self) {
         self.events.clear();
         for item in self.abiobj.as_array().unwrap() {
-            match item["type"].as_str().unwrap() {
-                "event" => {
-                    let event = self.parse_event(&item);
-                    self.events.push(event);
-                }
-
-                __ => {}
+            if item["type"].as_str().unwrap() == "event" {
+                let event = self.parse_event(item);
+                self.events.push(event);
             }
         }
     }

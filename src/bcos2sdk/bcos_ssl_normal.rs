@@ -44,11 +44,11 @@ pub trait ISslStreamWrap {
 struct EmptySslStreamWrap {}
 impl ISslStreamWrap for EmptySslStreamWrap {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        Ok(0 as usize)
+        Ok(0_usize)
     }
 
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        Ok(0 as usize)
+        Ok(0_usize)
     }
 
     fn shutdown(&mut self) -> Result<ShutdownResult, openssl::ssl::Error> {
@@ -64,20 +64,20 @@ impl ISslStreamWrap for SslStreamWrap {
         //println!("ISslStreamWrap write {:?}",buf.len());
         let res = self.ssl_stream.write(buf);
         match res {
-            Ok(t) => return Ok(t),
+            Ok(t) => Ok(t),
             Err(e) => {
                 let raw_code = e.raw_os_error().unwrap();
                 //println!("SslStream send return {:?},",raw_code);
                 match raw_code {
                     10035 => {
                         //10035表示would block @windows
-                        return Ok(0);
+                        Ok(0)
                     }
                     11 => {
                         //11表示would block @linux
-                        return Ok(0);
+                        Ok(0)
                     }
-                    __ => return Err(e),
+                    _ => Err(e),
                 }
             }
         }
@@ -88,20 +88,20 @@ impl ISslStreamWrap for SslStreamWrap {
         let res = self.ssl_stream.read(buf);
         //println!("SslStreamWrap recv {:?}",res);
         match res {
-            Ok(t) => return Ok(t),
+            Ok(t) => Ok(t),
             Err(e) => {
                 let raw_code = e.raw_os_error().unwrap();
                 //println!("SslStream read return {:?},", raw_code);
                 match raw_code {
                     10035 => {
                         //10035表示would block
-                        return Ok(0);
+                        Ok(0)
                     }
                     11 => {
                         //11表示would block @linux
-                        return Ok(0);
+                        Ok(0)
                     }
-                    __ => return Err(e),
+                    _ => Err(e),
                 }
             }
         }
@@ -129,11 +129,9 @@ pub struct BcosSSLClient {
 //unsafe impl Sync for  BcosSSLClient{}
 impl IBcosChannel for BcosSSLClient {
     fn finish(&mut self) {
-        if self.is_valid != true {
+        if !self.is_valid {
             return;
         }
-        //let stream = self.ssl_stream.take();
-        //let res = stream.unwrap().shutdown();
         let res = self.sslstream_wrap.shutdown();
         self.is_valid = false;
         self.is_connect = false;
@@ -182,30 +180,28 @@ impl IBcosChannel for BcosSSLClient {
         //sslstream的connect倒不很需要异步，只是connect一下，在connect后再设置异步
         let nio_res = ssl_stream.get_ref().set_nonblocking(true);
         //self.ssl_stream = Option::from(ssl_stream);
-        let sslstreamimpl = SslStreamWrap {
-            ssl_stream: ssl_stream,
-        };
+        let sslstreamimpl = SslStreamWrap { ssl_stream };
         self.sslstream_wrap = Box::from(sslstreamimpl);
         //tcp_stream.set_nonblocking(true);
         Ok(0)
     }
 
     ///异步发送数据，如果未发送任何字节，返回0，可以重试发送
-    fn send(&mut self, sendbuff: &Vec<u8>) -> Result<i32, KissError> {
+    fn send(&mut self, sendbuff: &[u8]) -> Result<i32, KissError> {
         //take从option里借用出来一个stream实例，用完要还回去。否则下次再调用的时候这个option就是None了
         //看起来线程不安全了。
         //if let Some(mut stream) = self.ssl_stream.take() {
         if self.is_connect {
             //let res = stream.write(&sendbuff.as_slice());
             //self.ssl_stream = Option::from(stream);
-            let res = self.sslstream_wrap.write(&sendbuff.as_slice());
+            let res = self.sslstream_wrap.write(sendbuff);
             printlnex!("send res {:?}", res);
             match res {
                 Ok(s) => return Ok(s as i32),
                 Err(e) => return kisserr!(KissErrKind::ENetwork, "ssl send fail {:?}", e),
             }
         }
-        return kisserr!(KissErrKind::ENetwork, "");
+        kisserr!(KissErrKind::ENetwork, "")
     }
 
     ///读取，c api要求输入一个预先分配好的缓冲区，讲读取的信息写入缓冲区带回
@@ -229,7 +225,7 @@ impl IBcosChannel for BcosSSLClient {
                 Err(e) => return kisserr!(KissErrKind::ENetwork, "ssl recv fail {:?}", e),
             };
         }
-        return kisserr!(KissErrKind::ENetwork, "");
+        kisserr!(KissErrKind::ENetwork, "")
     }
 }
 
@@ -285,18 +281,12 @@ impl BcosSSLClient {
                 );
             }
         };
-        let res = match ctx.set_tmp_ecdh(&curve) {
-            Ok(()) => (),
-            Err(e) => {
-                return kisserr!(KissErrKind::ENetwork, "sslconnector builder error {:?}", e);
-            }
-        };
-        let res = match BcosSSLClient::set_client_certs(&mut ctx, &self.config) {
-            Ok(()) => (),
-            Err(e) => {
-                return kisserr!(KissErrKind::ENetwork, "set client certs error {:?}", e);
-            }
-        };
+        if let Err(e) = ctx.set_tmp_ecdh(&curve) {
+            return kisserr!(KissErrKind::ENetwork, "sslconnector builder error {:?}", e);
+        }
+        if let Err(e) = BcosSSLClient::set_client_certs(&mut ctx, &self.config) {
+            return kisserr!(KissErrKind::ENetwork, "set client certs error {:?}", e);
+        }
 
         ctx.set_verify(SslVerifyMode::NONE);
         Ok(ctx)

@@ -59,8 +59,8 @@ impl BcosAccount {
 //helper 方法
 
 ///将私钥存入pem文件,无密码
-pub fn save_key_to_pem(key: &Vec<u8>, pemfile: &str) -> Result<(), KissError> {
-    let content = Pem::new("PRIVATE KEY", key.clone());
+pub fn save_key_to_pem(key: &[u8], pemfile: &str) -> Result<(), KissError> {
+    let content = Pem::new("PRIVATE KEY", key.to_owned());
     fileutils::write_all(pemfile, pem::encode(&content).into())
 }
 
@@ -104,23 +104,22 @@ pub fn try_from_fisco_pem_format(contents: Vec<u8>) -> Option<Vec<u8>> {
     None
 }
 
-fn address_from_pubkey(pubkey: &Vec<u8>, hashtype: &HashType) -> Vec<u8> {
-    let mut actpubkey = pubkey.clone();
+fn address_from_pubkey(pubkey: &[u8], hashtype: &HashType) -> Vec<u8> {
+    let mut actpubkey = pubkey;
     if pubkey.len() == 65 {
-        actpubkey = actpubkey[1..].to_vec(); //去掉头部的压缩标记
+        actpubkey = &actpubkey[1..]; //去掉头部的压缩标记
     }
-    let hash = CommonHash::hash(&actpubkey, hashtype);
-    let addressbytes = hash[12..].to_vec();
-    addressbytes
+    let hash = CommonHash::hash(actpubkey, hashtype);
+    hash[12..].to_vec()
 }
 
 pub trait IBcosAccountUtil {
     ///创建随机账户
     fn create_random(&self) -> BcosAccount;
     ///从私钥字节转换为账户
-    fn from_privkey_bytes(&self, privkey: &Vec<u8>) -> Result<BcosAccount, KissError>;
+    fn from_privkey_bytes(privkey: &[u8]) -> Result<BcosAccount, KissError>;
     ///从pem文件里的私钥转换为账户
-    fn from_pem(&self, pemfile: &str) -> Result<BcosAccount, KissError>;
+    fn from_pem(pemfile: &str) -> Result<BcosAccount, KissError>;
 }
 
 ///ecdsa 账户，实现创建和从既有私钥（字节）生成
@@ -135,21 +134,21 @@ lazy_static! {
 impl IBcosAccountUtil for EcdsaAccountUtil {
     ///创建一个基于随机数的账户
     fn create_random(&self) -> BcosAccount {
-        let (pubkey, secret_key) = WEDPRSM2.generate_keypair();
+        let (pubkey, privkey) = WEDPRSM2.generate_keypair();
         let address = address_from_pubkey(&pubkey, &HashType::KECCAK);
         BcosAccount {
-            privkey: secret_key,
-            pubkey: pubkey,
-            address: address,
+            privkey,
+            pubkey,
+            address,
         }
     }
     ///从私钥字节转为账户
-    fn from_privkey_bytes(&self, privkey: &Vec<u8>) -> Result<BcosAccount, KissError> {
+    fn from_privkey_bytes(privkey: &[u8]) -> Result<BcosAccount, KissError> {
         let keyresult = WEDPRSM2.derive_public_key(privkey);
         match keyresult {
             Ok(pubkey) => {
                 let account = BcosAccount {
-                    privkey: privkey.clone(),
+                    privkey: privkey.to_owned(),
                     pubkey: pubkey.clone(),
                     address: address_from_pubkey(&pubkey, &HashType::KECCAK),
                 };
@@ -161,9 +160,9 @@ impl IBcosAccountUtil for EcdsaAccountUtil {
         }
     }
     ///从pem文件加载私钥,并转为账户格式,无密码
-    fn from_pem(&self, pemfile: &str) -> Result<BcosAccount, KissError> {
+    fn from_pem(pemfile: &str) -> Result<BcosAccount, KissError> {
         let key = load_key_from_pem(pemfile)?;
-        self.from_privkey_bytes(&key)
+        Self::from_privkey_bytes(&key)
     }
 }
 
@@ -184,14 +183,14 @@ impl IBcosAccountUtil for GMAccountUtil {
     fn create_random(&self) -> BcosAccount {
         let (pubkey, privkey) = WEDPR_SM2.generate_keypair();
         BcosAccount {
-            privkey: privkey,
+            privkey,
             pubkey: pubkey.clone(),
             address: address_from_pubkey(&pubkey, &HashType::WEDRP_SM3),
         }
     }
     ///从私钥字节转为账户
-    fn from_privkey_bytes(&self, privkey: &Vec<u8>) -> Result<BcosAccount, KissError> {
-        let secret_key = match SM2_CTX.load_seckey(&privkey.as_ref()) {
+    fn from_privkey_bytes(privkey: &[u8]) -> Result<BcosAccount, KissError> {
+        let secret_key = match SM2_CTX.load_seckey(privkey) {
             Ok(v) => v,
             Err(_) => {
                 return kisserr!(KissErrKind::EFormat, "SM2_CTX.load_seckey");
@@ -205,17 +204,17 @@ impl IBcosAccountUtil for GMAccountUtil {
         }
         let address = address_from_pubkey(&pubkey, &HashType::WEDRP_SM3);
         let account = BcosAccount {
-            privkey: privkey.clone(),
-            pubkey: pubkey,
-            address: address,
+            privkey: privkey.to_vec(),
+            pubkey,
+            address,
         };
         Ok(account)
     }
 
     ///从pem文件加载私钥,并转为账户格式,无密码
-    fn from_pem(&self, pemfile: &str) -> Result<BcosAccount, KissError> {
+    fn from_pem(pemfile: &str) -> Result<BcosAccount, KissError> {
         let key = load_key_from_pem(pemfile)?;
-        self.from_privkey_bytes(&key)
+        Self::from_privkey_bytes(&key)
     }
 }
 
@@ -232,30 +231,18 @@ pub fn account_from_pem(
     cryptokind: &BcosCryptoKind,
 ) -> Result<BcosAccount, KissError> {
     match cryptokind {
-        BcosCryptoKind::ECDSA => {
-            let accountutil = EcdsaAccountUtil::default();
-            accountutil.from_pem(pemfile)
-        }
-        BcosCryptoKind::GM => {
-            let accountutil = GMAccountUtil::default();
-            accountutil.from_pem(pemfile)
-        }
+        BcosCryptoKind::ECDSA => EcdsaAccountUtil::from_pem(pemfile),
+        BcosCryptoKind::GM => GMAccountUtil::from_pem(pemfile),
     }
 }
 
 pub fn account_from_privkey(
-    keybytes: &Vec<u8>,
+    keybytes: &[u8],
     cryptokind: BcosCryptoKind,
 ) -> Result<BcosAccount, KissError> {
     match cryptokind {
-        BcosCryptoKind::ECDSA => {
-            let accountutil = EcdsaAccountUtil::default();
-            accountutil.from_privkey_bytes(keybytes)
-        }
-        BcosCryptoKind::GM => {
-            let accountutil = GMAccountUtil::default();
-            accountutil.from_privkey_bytes(keybytes)
-        }
+        BcosCryptoKind::ECDSA => EcdsaAccountUtil::from_privkey_bytes(keybytes),
+        BcosCryptoKind::GM => GMAccountUtil::from_privkey_bytes(keybytes),
     }
 }
 
@@ -264,13 +251,13 @@ pub fn test_account() {
     let fixkey = "82dcd33c98a23d5d06f9331554e14ab4044a1d71b169b7a38b61c214f0690f80";
     //let account = EcdsaAccount::creat_random();
     let accountresult =
-        EcdsaAccountUtil::default().from_privkey_bytes(&hex::decode(String::from(fixkey)).unwrap());
+        EcdsaAccountUtil::from_privkey_bytes(&hex::decode(String::from(fixkey)).unwrap());
     let account = accountresult.unwrap();
     println!("account : {:?}", account);
     let pemfile = "sdk/test.pem";
     let res = save_key_to_pem(&account.privkey, pemfile);
     let loadres = load_key_from_pem(pemfile);
-    let accountload = EcdsaAccountUtil::default().from_privkey_bytes(&loadres.unwrap());
+    let accountload = EcdsaAccountUtil::from_privkey_bytes(&loadres.unwrap());
     println!("load result {:?}", accountload);
     println!("account in hex : {:?}", account.to_hexdetail());
 }

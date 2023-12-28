@@ -38,7 +38,7 @@ pub fn demo_deploy(bcossdk: &mut Bcos2Client, contract: &ContractABI) -> Result<
         contract_name.to_string()
     );
     let paramcode = contract
-        .encode_construtor_input("".as_bytes().to_vec(), &params, true)
+        .encode_construtor_input(Vec::new(), &params, true)
         .unwrap();
     let v = bcossdk.deploy_file(binfile.as_str(), paramcode.as_str());
     println!("request response {:?}", v);
@@ -87,7 +87,7 @@ pub fn demo(configfile: &str) {
 
     println!(">>>>>>>>>>>>>>>> call after transaction");
     let callvalue = bcossdk
-        .call(&contract, &to_address, "get", &["".to_string()])
+        .call(&contract, &to_address, "get", &[String::new()])
         .unwrap();
     let output = callvalue["result"]["output"].as_str().unwrap();
 

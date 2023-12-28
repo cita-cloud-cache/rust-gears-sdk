@@ -41,7 +41,7 @@ pub trait ABITokenizer {
     /// 解析出一个结构体tuple
     fn tokenize_struct_by_str_array(
         paramstr_array: &Vec<String>,
-        param: &Vec<ParamType>,
+        param: &[ParamType],
     ) -> Result<Vec<Token>, ABIError> {
         let mut result: Vec<Token> = vec![];
         let mut params = param.iter();
@@ -57,9 +57,9 @@ pub trait ABITokenizer {
     }
     /// Tried to parse a struct as a vector of tokens
     /// 传入的是('pet288',"314")这样的字符串文本
-    fn tokenize_struct(value: &str, paramtypes: &Vec<ParamType>) -> Result<Vec<Token>, ABIError> {
-        let inputstr = value.trim_start_matches("(");
-        let inputstr = inputstr.trim_end_matches(")");
+    fn tokenize_struct(value: &str, paramtypes: &[ParamType]) -> Result<Vec<Token>, ABIError> {
+        let inputstr = value.trim_start_matches('(');
+        let inputstr = inputstr.trim_end_matches(')');
 
         let paramstr_array = split_param(inputstr);
         //println!("tokenize_struct param: {:?}",paramtypes);
@@ -68,8 +68,8 @@ pub trait ABITokenizer {
 
     /// Tries to parse a value as a vector of tokens.
     fn tokenize_array(value: &str, param: &ParamType) -> Result<Vec<Token>, ABIError> {
-        let inputstr = value.trim_start_matches("[");
-        let inputstr = inputstr.trim_end_matches("]");
+        let inputstr = value.trim_start_matches('[');
+        let inputstr = inputstr.trim_end_matches(']');
 
         let paramstr_array = split_param(inputstr);
         let mut result: Vec<Token> = vec![];
@@ -136,9 +136,9 @@ impl ABITokenizer for ABIStrictTokenizer {
     fn tokenize_bytes(value: &str) -> Result<Vec<u8>, ABIError> {
         let vres = hex::decode(value);
         match vres {
-            Ok(v) => return Ok(v),
-            Err(e) => return Err(ABIError::InvalidData),
-        };
+            Ok(v) => Ok(v),
+            Err(e) => Err(ABIError::InvalidData),
+        }
     }
 
     fn tokenize_fixed_bytes(value: &str, len: usize) -> Result<Vec<u8>, ABIError> {

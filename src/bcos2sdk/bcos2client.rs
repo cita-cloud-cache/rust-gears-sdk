@@ -61,23 +61,15 @@ impl Bcos2Client {
             &self.config.common.crypto,
             &self.config.configfile.as_ref().unwrap()
         );
-        let protocol;
-        match self.config.bcos2.protocol {
-            BcosClientProtocol::RPC => {
-                protocol = format!("RPC:{}", self.config.rpc.url);
-            }
-            BcosClientProtocol::CHANNEL => {
-                protocol = format!(
-                    "Channel:{}:{}({:?})",
-                    &self.config.channel.ip, self.config.channel.port, &self.config.channel.tlskind
-                );
-            }
-            _ => {
-                protocol = format!("unhandle protocal: {:?}", self.config.bcos2.protocol);
-            }
-        }
-        let full = format!("{},{}", protocol, basic);
-        return full;
+        let protocol = match self.config.bcos2.protocol {
+            BcosClientProtocol::RPC => format!("RPC:{}", self.config.rpc.url),
+            BcosClientProtocol::CHANNEL => format!(
+                "Channel:{}:{}({:?})",
+                &self.config.channel.ip, self.config.channel.port, &self.config.channel.tlskind
+            ),
+            _ => format!("unhandle protocal: {:?}", self.config.bcos2.protocol),
+        };
+        format!("{},{}", protocol, basic)
     }
 
     pub fn new_from_config(configfile: &str) -> Result<Bcos2Client, KissError> {
@@ -94,13 +86,17 @@ impl Bcos2Client {
         //printlnex!("done account");
         match &config.common.crypto {
             BcosCryptoKind::ECDSA => {
-                let mut signer = CommonSignerWeDPR_Secp256::default();
-                signer.account = account.clone();
+                let signer = CommonSignerWeDPR_Secp256 {
+                    account: account.clone(),
+                    ..Default::default()
+                };
                 ecdsasigner = Option::from(signer);
             }
             BcosCryptoKind::GM => {
-                let mut signer = CommonSignerWeDPR_SM2::default();
-                signer.account = account.clone();
+                let signer = CommonSignerWeDPR_SM2 {
+                    account: account.clone(),
+                    ..Default::default()
+                };
                 gmsigner = Option::from(signer);
             }
         }
@@ -132,8 +128,7 @@ impl Bcos2Client {
 
     pub fn deploy_hexcode(&mut self, hexcode: &str) -> Result<JsonValue, KissError> {
         let block_limit = self.getBlockLimit()?;
-        let to_address = "".to_string();
-        let tx = self.make_transaction(&to_address, &hexcode, block_limit);
+        let tx = self.make_transaction("", hexcode, block_limit);
         let groupid = self.config.bcos2.groupid;
         let cmd = "sendRawTransaction";
         let rawdata = self.encode_sign_raw_tx(&tx.unwrap())?;
@@ -164,7 +159,7 @@ impl Bcos2Client {
             &CommonHash::crypto_to_hashtype(&self.config.common.crypto),
         )?;
         let paramcode = contract
-            .encode_construtor_input("".as_bytes().to_vec(), &params_array, true)
+            .encode_construtor_input(Vec::new(), params_array, true)
             .unwrap();
         let codewithparam = format!("{}{}", hexcode, paramcode); //追加参数
         self.deploy_hexcode(codewithparam.as_str())
@@ -182,13 +177,9 @@ impl Bcos2Client {
             &CommonHash::crypto_to_hashtype(&self.config.common.crypto),
         )?;
         let paramcode = contract
-            .encode_construtor_input("".as_bytes().to_vec(), &params_array, true)
+            .encode_construtor_input(Vec::new(), params_array, true)
             .unwrap();
-        let binfile = format!(
-            "{}/{}.bin",
-            self.config.common.contractpath,
-            contractname.to_string()
-        );
+        let binfile = format!("{}/{}.bin", self.config.common.contractpath, contractname);
         self.deploy_file(binfile.as_str(), paramcode.as_str())
     }
 
@@ -333,7 +324,7 @@ impl Bcos2Client {
         params: &[Token],
     ) -> Result<JsonValue, KissError> {
         let response =
-            self.send_raw_transaction_withtokenparam(&contract, &to_address, methodname, params)?;
+            self.send_raw_transaction_withtokenparam(contract, to_address, methodname, params)?;
         let txhash = response["result"].as_str().unwrap();
         self.try_getTransactionReceipt(txhash, 3, false)
     }
@@ -346,7 +337,7 @@ impl Bcos2Client {
         methodname: &str,
         params: &[String],
     ) -> Result<JsonValue, KissError> {
-        let response = self.send_raw_transaction(&contract, &to_address, methodname, &params)?;
+        let response = self.send_raw_transaction(contract, to_address, methodname, params)?;
         println!("response {:?}", response);
         let txhash = response["result"].as_str().unwrap();
         self.try_getTransactionReceipt(txhash, 3, false)
@@ -361,11 +352,11 @@ impl Bcos2Client {
     ) -> Result<JsonValue, KissError> {
         let block_limit = self.getBlockLimit()?;
         let txinput = contract.encode_function_input_to_abi(methodname, params, true)?;
-        let tx = self.make_transaction(to_address, &txinput.as_str(), block_limit);
+        let tx = self.make_transaction(to_address, txinput.as_str(), block_limit);
         let groupid = self.config.bcos2.groupid;
         let cmd = "sendRawTransactionAndGetProof";
         let rawdata = self.encode_sign_raw_tx(&tx.unwrap())?;
-        let hexdata = hex::encode(&rawdata);
+        let hexdata = hex::encode(rawdata);
         let paramobj = json!([groupid, hexdata]);
         let value = self.netclient.rpc_request_sync(cmd, &paramobj)?;
         Ok(value)

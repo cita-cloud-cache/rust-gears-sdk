@@ -75,14 +75,14 @@ impl EventHandler {
         .unwrap();
 
         EventHandler {
-            contract: contract,
+            contract,
             worker: Arc::new(Mutex::new(worker)),
         }
     }
     pub fn register_eventlog_filter(
         &mut self,
         eventcallback: HANDLE_FACADE_OBJ,
-        address: &Vec<String>,
+        address: &[String],
         event_name: &str,
         indexed_values: &Vec<&str>,
     ) {
@@ -95,7 +95,7 @@ impl EventHandler {
 
         //构造注册消息监听的请求包json
         let mut req = RegisterEventRequest::new();
-        req.addresses.append(&mut address.clone());
+        req.addresses.extend_from_slice(address);
         println!("event name is {}", event_name);
         let eventres = self.contract.find_event_by_name(event_name);
         //self.contract.print_event_namehash();
@@ -109,14 +109,14 @@ impl EventHandler {
         };
         //这些打印都可以删掉
         println!("event  is {:?}", event);
-        let evhash = self.contract.event_abi_utils.event_signature(&event);
+        let evhash = self.contract.event_abi_utils.event_signature(event);
         req.topics.push(format!("0x{}", hex::encode(evhash)));
         for t in &req.topics {
             //println!("topic: {:?}",format!("0x{}",hex::encode(evhash)));
         }
-        let indexedevents = self.contract.event_abi_utils.indexed_params(&event, true);
-        let mut i = 0;
-        for e in indexedevents {
+        let indexedevents = self.contract.event_abi_utils.indexed_params(event, true);
+
+        for (i, e) in indexedevents.into_iter().enumerate() {
             if i >= indexed_values.len() {
                 break;
             } //根据输入的参数个数
@@ -124,8 +124,7 @@ impl EventHandler {
             let topic = self
                 .contract
                 .event_abi_utils
-                .topic_by_indexed_params(&e.kind, &indexed_values.get(i).unwrap());
-            i = i + 1;
+                .topic_by_indexed_params(&e.kind, indexed_values.get(i).unwrap());
             println!("topic is {},eventparam:{:?}", &topic, e);
             //将topic加入到请求包体
             req.topics.push(topic);
@@ -168,7 +167,7 @@ impl IChannelPushHandlerFacade for DemoEventHandler {
     fn handle(&self, pack: &ChannelPack) {
         println!("!!!!!!!  EVENT CALL BACKUP {}", pack.detail());
         let value: JsonValue =
-            serde_json::from_str(&String::from_utf8(pack.data.clone()).unwrap().as_str()).unwrap();
+            serde_json::from_str(String::from_utf8(pack.data.clone()).unwrap().as_str()).unwrap();
         let parsed_logs = self.contract.parse_receipt_logs(&value["logs"]);
         println!("{:?}", parsed_logs);
     }
@@ -198,12 +197,7 @@ pub async fn event_demo(configfile: &str) -> Result<(), KissError> {
                                        //event里的indexed类型的参数，传入时全部用字符串形式
     let indexed_value = vec!["5", "key123"];
     //注册事件监听
-    evh.register_eventlog_filter(
-        demohandler,
-        &vec![address.clone()],
-        event_name,
-        &indexed_value,
-    );
+    evh.register_eventlog_filter(demohandler, &[address.clone()], event_name, &indexed_value);
 
     println!("\n>>>>>>>>>>>>>>>>>>>>demo helloEvent settwo");
     //发个交易触发一下事件
@@ -216,7 +210,7 @@ pub async fn event_demo(configfile: &str) -> Result<(), KissError> {
     let txres = evh.worker.lock().unwrap().bcossdk.send_raw_transaction(
         &evh.contract,
         &address,
-        &method.to_string(),
+        method,
         paramsvec.as_slice(),
     );
     println!("send_raw_transaction result {:?}", txres);

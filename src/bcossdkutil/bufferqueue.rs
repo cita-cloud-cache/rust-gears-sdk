@@ -29,8 +29,8 @@ impl BufferQueue {
         BufferQueue { queue: Vec::new() }
     }
     ///简单的将书加入缓冲区
-    pub fn append(&mut self, newdata: &mut Vec<u8>) {
-        self.queue.append(newdata);
+    pub fn append(&mut self, newdata: &[u8]) {
+        self.queue.extend_from_slice(newdata);
     }
     ///从缓冲区的头部去掉n个部分
     pub fn cut(&mut self, pos: usize) {
@@ -40,11 +40,11 @@ impl BufferQueue {
 
 pub fn test_queue() {
     let mut queue = BufferQueue::new();
-    let mut v: Vec<u8> = [1, 2, 3, 4, 5].to_vec();
-    queue.append(&mut v);
+    let v: Vec<u8> = vec![1, 2, 3, 4, 5];
+    queue.append(&v);
     println!("{:?}", queue);
-    let mut v1: Vec<u8> = [6, 7, 8].to_vec();
-    queue.append(&mut v1);
+    let v1: Vec<u8> = vec![6, 7, 8];
+    queue.append(&v1);
     println!("{:?}", queue);
     queue.cut(3);
     println!("{:?}", queue);

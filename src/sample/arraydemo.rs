@@ -112,7 +112,7 @@ pub fn demo(cli: &Cli) {
 
     println!(">>>>>>>>>>>>>>>> call after transaction");
     let callvalue = bcossdk
-        .call(&contract, &to_address, "total", &["".to_string()])
+        .call(&contract, &to_address, "total", &[String::new()])
         .unwrap();
     let output = callvalue["result"]["output"].as_str().unwrap();
 

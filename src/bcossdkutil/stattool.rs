@@ -17,6 +17,6 @@ impl StatTime {
     }
     pub fn used_ms(&self) -> i64 {
         let time_used = self.time_end - self.time_begin;
-        return time_used.as_millis() as i64;
+        time_used.as_millis() as i64
     }
 }
