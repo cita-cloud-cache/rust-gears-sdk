@@ -28,17 +28,9 @@ Rust SDK for FISCO-BCOS  ,like some  rusted  but solid gears , help to build  bl
 - 支持FISCO BCOS2.0 合约事件监听，参见相应调用
 
 
-## rustc环境
+## rust版本
 
-已经验证的rust版本 
-
-rustc 1.54.0-nightly (ed597e7e1 2021-06-08) 
-
-rustc 1.55.0-nightly (67b03007c 2021-07-23)
-
-rustc 1.66.0-nightly (f5193a9fc 2022-09-25)
-
-rust版本的本身更新较快，请按rust官网指引安装配置。
+支持最新`stable`版本。
 
 
 ## crates.io引用方式
@@ -114,6 +106,24 @@ ABI格式编解码和2.x的客户端一样依旧用rust实现。
 **C++客户端代码**
 [https://github.com/FISCO-BCOS/bcos-cpp-sdk](https://github.com/FISCO-BCOS/bcos-cpp-sdk)
 
+## Solc编译器下载说明
+
+```bash
+$ cd bin/
+$ bash download_solc.sh -h
+Usage:
+    -v <solc version>           Default 0.4.25, 0.5.2, 0.6.10 is supported
+    -g <gm version>             if set download solc gm version
+    -h Help
+e.g
+    download_solc.sh -v 0.4.25 -g
+$ bash download_solc.sh
+$ ll
+solc-0.4.25 -> ~/.fisco/solc/solc-0.4.25
+```
+
+根据实际操作系统版本、国密或非国密，传递对应的参数。
+
 ## 配置文件
 主要配置文件是 conf/config.toml，项目提供了conf/config.toml.sample,将其复制或去掉sample后缀即可。
 
@@ -167,6 +177,7 @@ gmensdkkey = "sdk/gmensdk.key"
 #------------------FISCO BCOS2.0 End----------------------------------------
 ```
 
+**根据前面下载的solc的版本修改配置文件中solc可执行文件名称。如前面展示，脚本下载的solc是带后缀的，而默认的配置文件中没有后缀**
 
 ## 控制台使用帮助：
 ```
@@ -208,14 +219,6 @@ cargo run -- bcos3 sendtx HelloWorld latest set "new data"
 
 
 账户管理、合约编译这些无节点版本区别的，则不需要加bcos2/bcos3参数
-
-## Solc编译器下载说明
-
-下载链接参见 [Github Release:包含多版本/多平台](https://github.com/FISCO-BCOS/solidity/releases)
-
-根据实际操作系统版本、国密或非国密，下载相应的二进制文件，解压并放到bin/目录下，或者和配置路径对应
-
-建议同时下载0.4.25和6.x的solc
 
 ## 控制台输入复杂数据类型概要说明
 
