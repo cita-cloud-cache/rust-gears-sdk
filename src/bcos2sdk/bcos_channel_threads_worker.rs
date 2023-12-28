@@ -76,8 +76,7 @@ pub fn send_packet(
 
 fn is_working(worker_arc: &BcosChannelWorkerArc) -> bool {
     let worker = worker_arc.lock().unwrap();
-    let working = worker.is_working;
-    working
+    worker.is_working
 }
 
 async fn read_thread(worker_arc: BcosChannelWorkerArc, tx: &Sender<ChannelPack>) {
@@ -168,7 +167,7 @@ pub fn handle_packet(worker_arc: &BcosChannelWorkerArc, pack: &ChannelPack) {
     let handleOpt = worker.handlemanager.get_handle(&pack.packtype);
     match handleOpt {
         Some(handle) => {
-            handle.lock().unwrap().handle(&pack);
+            handle.lock().unwrap().handle(pack);
         }
         None => {
             println!("Handle not found for type {}", pack.packtype);

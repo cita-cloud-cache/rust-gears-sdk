@@ -83,8 +83,8 @@ pub fn lib_usage_msg() -> String {
 }
 
 ///强行在String的 最后补'\0',以作为c风格字符串传给c库，否则会有乱字符串传进去
-fn rzero(s: &String) -> String {
-    let mut n = s.clone();
+fn rzero(s: &str) -> String {
+    let mut n = s.to_owned();
     n.push('\0');
     n
 }
@@ -143,7 +143,7 @@ impl IBcosChannel for BcosNativeTlsClient {
     }
 
     ///异步发送数据，如果未发送任何字节，返回0，可以重试发送
-    fn send(&mut self, sendbuff: &Vec<u8>) -> Result<i32, KissError> {
+    fn send(&mut self, sendbuff: &[u8]) -> Result<i32, KissError> {
         unsafe {
             let func_send: Symbol<FUNC_SSOCK_SEND> = self
                 .ssocklib
@@ -196,7 +196,7 @@ impl IBcosChannel for BcosNativeTlsClient {
                 //println!("buffer {:?}",recvbuffer);
                 Ok(recvbuffer)
             } else {
-                return kisserr!(KissErrKind::Error, "recv {}", r);
+                kisserr!(KissErrKind::Error, "recv {}", r)
             }
         }
     }
@@ -228,11 +228,11 @@ impl BcosNativeTlsClient {
         };
 
         unsafe {
-            let func_create: Symbol<FN_SSOCK_CREATE> = (&nativelib).get(b"ssock_create").unwrap();
+            let func_create: Symbol<FN_SSOCK_CREATE> = nativelib.get(b"ssock_create").unwrap();
             let pssock_ptr = func_create();
             let lib = SSockNativeLib {
                 pssock: Arc::new(Mutex::new(pssock_ptr)),
-                nativelib: nativelib,
+                nativelib,
             };
 
             self.ssocklib = Option::from(lib);
@@ -254,40 +254,28 @@ impl BcosNativeTlsClient {
         exepath.pop();
         let mut libname: String = "native_tassl_sock_wrap".to_string();
         if is_windows() {
-            libname = libname + ".dll";
+            libname += ".dll";
         } else {
             libname = format!("lib{}.so", libname);
         }
-        // let fullpath = exepath.join(Path::new(libname.as_str()));
-        //let pathstr =  fullpath.as_os_str().to_str().unwrap();
-        let pathstr = libname;
-        return pathstr.to_string();
+        libname.to_string()
     }
     ///寻找相应路径下的动态库
     pub fn openlib() -> Result<Library, KissError> {
         unsafe {
-            //let currpath = Path::new("../..");
-
-            //println!("curr exe :{:?}", env::current_exe().unwrap());
-            //println!("curr exe path:{:?}",exefile.as_path().to_str());
-            //println!("curr dir: {:?}", currpath.canonicalize().unwrap());
-            //let dllfile = currpath.join("native_tassl_sock_wrap.dll");
-
             let lib_fullpath = BcosNativeTlsClient::locate_lib_path();
             //println!("lib file : {:?}", lib_fullpath);
             let res = Library::new(lib_fullpath.as_str());
             //println!("open lib {},res {:?}",lib_fullpath,res);
             match res {
-                Ok(lib) => {
-                    return Ok(lib);
-                }
+                Ok(lib) => Ok(lib),
                 Err(e) => {
-                    return kisserr!(
+                    kisserr!(
                         KissErrKind::Error,
                         "load lib error [{}],{:?}",
                         lib_fullpath,
                         e
-                    );
+                    )
                 }
             }
         }
@@ -360,29 +348,24 @@ impl BcosNativeTlsClient {
                 .unwrap();
             //printlnex!("debug get ssock_init done");
             //let r =func_init(self.ssocklib.as_ref().unwrap().pssock,self.cacrt.as_str().as_ptr(),self.sdkcrt.as_str().as_ptr(),self.sdkkey.as_str().as_ptr(),"","");
-            let r;
-            match self.config.tlskind {
-                BcosCryptoKind::ECDSA => {
-                    r = func_init(
-                        mac_pssock!(self),
-                        rzero(&self.config.cacert).as_ptr(),
-                        rzero(&self.config.sdkcert).as_ptr(),
-                        rzero(&self.config.sdkkey).as_ptr(),
-                        rzero(&"".to_string()).as_ptr(),
-                        rzero(&"".to_string()).as_ptr(),
-                    );
-                }
-                BcosCryptoKind::GM => {
-                    r = func_init(
-                        mac_pssock!(self),
-                        rzero(&self.config.gmcacert).as_ptr(),
-                        rzero(&self.config.gmsdkcert).as_ptr(),
-                        rzero(&self.config.gmsdkkey).as_ptr(),
-                        rzero(&self.config.gmensdkcert).as_ptr(),
-                        rzero(&self.config.gmensdkkey).as_ptr(),
-                    );
-                }
-            }
+            let r = match self.config.tlskind {
+                BcosCryptoKind::ECDSA => func_init(
+                    mac_pssock!(self),
+                    rzero(&self.config.cacert).as_ptr(),
+                    rzero(&self.config.sdkcert).as_ptr(),
+                    rzero(&self.config.sdkkey).as_ptr(),
+                    rzero("").as_ptr(),
+                    rzero("").as_ptr(),
+                ),
+                BcosCryptoKind::GM => func_init(
+                    mac_pssock!(self),
+                    rzero(&self.config.gmcacert).as_ptr(),
+                    rzero(&self.config.gmsdkcert).as_ptr(),
+                    rzero(&self.config.gmsdkkey).as_ptr(),
+                    rzero(&self.config.gmensdkcert).as_ptr(),
+                    rzero(&self.config.gmensdkkey).as_ptr(),
+                ),
+            };
             if r < 0 {
                 return kisserr!(KissErrKind::ENetwork, "init tls client error {}", r);
             }
@@ -424,7 +407,7 @@ pub fn test_ssl_native() {
         if recvres.is_ok() {
             let recvbuffer = recvres.unwrap().clone();
 
-            if recvbuffer.len() > 0 {
+            if !recvbuffer.is_empty() {
                 println!("{:?}", recvbuffer);
                 let p = ChannelPack::unpack(&recvbuffer).unwrap();
                 println!("pack: {}", p.detail());

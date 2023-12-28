@@ -30,7 +30,7 @@ pub fn cmd_account(cli: &Cli) -> Result<(), KissError> {
     //将cmd和param拼在一起，作为新的args，给到StructOpt去解析（因为第一个参数总是app名）
     let mut cmdparams: Vec<String> = vec![cli.cmd.clone()];
 
-    cmdparams.append(&mut cli.params.clone());
+    cmdparams.extend_from_slice(&cli.params);
     println!("cmdparams {:?}", cmdparams);
     let configfile = cli.default_configfile();
 

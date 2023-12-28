@@ -47,15 +47,15 @@ pub enum CHANNEL_PACK_TYPE {
 
 ///https://fisco-bcos-documentation.readthedocs.io/zh_CN/latest/docs/design/protocol_description.html#channelmessage-v2
 ///
-///length	uint32_t	4	数据包长度，含包头和数据，大端
+///length    uint32_t    4    数据包长度，含包头和数据，大端
 ///
-///type	uint16_t	2	数据包类型，大端
+///type    uint16_t    2    数据包类型，大端
 ///
-///seq	string	32	数据包序列号，32字节uuid
+///seq    string    32    数据包序列号，32字节uuid
 ///
-///result	int32_t	4	错误码，大端
+///result    int32_t    4    错误码，大端
 ///
-///data	bytes	length-42	数据包体，字节流
+///data     bytes    length-42    数据包体，字节流
 #[derive(Default, Clone, Debug)]
 pub struct ChannelPack {
     pub length: usize,
@@ -79,20 +79,19 @@ impl ChannelPack {
 
     pub fn make_seq() -> H256 {
         let v: u32 = rand::random();
-        let vhash = keccak(v.to_be_bytes());
-        return vhash;
+        keccak(v.to_be_bytes())
     }
     pub fn pack(&self) -> Vec<u8> {
         let mut buffer: Vec<u8> = Vec::new();
-        buffer.append(&mut Vec::from((self.length as u32).to_be_bytes()));
-        buffer.append(&mut Vec::from(self.packtype.to_be_bytes()));
-        buffer.append(&mut Vec::from(self.seq.to_fixed_bytes()));
-        buffer.append(&mut Vec::from(self.result.to_be_bytes()));
-        buffer.append(&mut self.data.clone());
+        buffer.extend_from_slice(&(self.length as u32).to_be_bytes());
+        buffer.extend_from_slice(&self.packtype.to_be_bytes());
+        buffer.extend_from_slice(&self.seq.to_fixed_bytes());
+        buffer.extend_from_slice(&self.result.to_be_bytes());
+        buffer.extend_from_slice(&self.data);
         buffer
     }
 
-    pub fn unpack(data: &Vec<u8>) -> Result<ChannelPack, KissError> {
+    pub fn unpack(data: &[u8]) -> Result<ChannelPack, KissError> {
         if data.len() < 42 {
             return kisserr!(
                 KissErrKind::EFormat,
@@ -100,19 +99,21 @@ impl ChannelPack {
                 data.len()
             );
         }
-        let mut pack = ChannelPack::default();
+        let mut pack = ChannelPack {
+            length: i32::from_be_bytes(data[..4].try_into().unwrap()) as usize,
+            ..Default::default()
+        };
         //deserialize::<ChannelPack>(data.as_slice()).unwrap();
-        pack.length = i32::from_be_bytes(data.as_slice()[..4].try_into().unwrap()) as usize;
         if data.len() < pack.length {
             //数据量不够
             return kisserr!(KissErrKind::EFormat, "buffer size less than pack.length");
         }
         let mut start = 4;
-        pack.packtype = u16::from_be_bytes(data.as_slice()[start..(start + 2)].try_into().unwrap());
-        start = start + 2;
+        pack.packtype = u16::from_be_bytes(data[start..(start + 2)].try_into().unwrap());
+        start += 2;
         pack.seq = H256::from_slice(&data[start..start + 32]);
         start += 32;
-        pack.result = u32::from_be_bytes(data.as_slice()[start..start + 4].try_into().unwrap());
+        pack.result = u32::from_be_bytes(data[start..start + 4].try_into().unwrap());
         //start += 4;
         pack.data = Vec::from(&data[42..pack.length]);
         Ok(pack)
@@ -124,10 +125,10 @@ pub fn make_channel_pack(packtype: CHANNEL_PACK_TYPE, data: &str) -> Option<Chan
 
 pub fn make_channel_pack_by_rawdata(
     packtype: CHANNEL_PACK_TYPE,
-    data: &Vec<u8>,
+    data: &[u8],
 ) -> Option<ChannelPack> {
     let mut pack = ChannelPack::default();
-    pack.data.append(&mut data.clone());
+    pack.data.extend_from_slice(&data);
     pack.seq = ChannelPack::make_seq();
     pack.packtype = packtype as u16;
     pack.result = 0;
@@ -139,17 +140,17 @@ pub fn make_channel_pack_by_rawdata(
 
 ///
 ///  1字节头部长度（1+topic长度）+ topic + data
-pub fn pack_amop(topic: &Vec<u8>, data: &Vec<u8>) -> Vec<u8> {
+pub fn pack_amop(topic: &[u8], data: &[u8]) -> Vec<u8> {
     let headerlen: u8 = 1 + (topic.len() as u8);
     let mut buffer: Vec<u8> = vec![];
-    buffer.append(&mut Vec::from(headerlen.to_be_bytes()));
-    buffer.append(&mut topic.clone());
-    buffer.append(&mut data.clone());
+    buffer.extend_from_slice(&headerlen.to_be_bytes());
+    buffer.extend_from_slice(topic);
+    buffer.extend_from_slice(data);
     buffer
 }
-pub fn unpack_amop(buffer: &Vec<u8>) -> (Vec<u8>, Vec<u8>) {
+pub fn unpack_amop(buffer: &[u8]) -> (Vec<u8>, Vec<u8>) {
     //let  start = 0;
-    let headerlen = u8::from_be_bytes(buffer.as_slice()[0..1].try_into().unwrap());
+    let headerlen = u8::from_be_bytes(buffer[0..1].try_into().unwrap());
     let mut topic = vec![];
     if headerlen > 1 {
         topic = Vec::from(&buffer[1..headerlen as usize])

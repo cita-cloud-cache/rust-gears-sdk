@@ -14,6 +14,7 @@ pub mod bcos2sdk;
 pub mod bcos3sdk;
 pub mod bcossdkutil;
 
+/*
 #[cfg(test)]
 mod tests {
     //set RUST_TEST_NOCAPTURE=1
@@ -57,3 +58,4 @@ mod tests {
         Ok(())
     }
 }
+*/

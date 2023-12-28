@@ -97,7 +97,7 @@ pub fn demo_get(cli: &Cli) -> Result<(), KissError> {
     );
     let txlist = block["transactions"].as_array().unwrap().clone();
     let value = txlist.get(0).unwrap().clone();
-    let txhash = value.as_str().unwrap().clone();
+    let txhash = value.as_str().unwrap();
     println!("get transaction by hash : {}", &txhash);
     let tx = bcos3client.getTransactionByHash(txhash, 0)?;
     println!("get transction by hash result {:?}", tx);

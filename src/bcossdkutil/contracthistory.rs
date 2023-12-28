@@ -37,23 +37,22 @@ pub struct ContractRecord {
 impl ContractRecord {
     pub fn decord(address: &str, raw: &str) -> ContractRecord {
         //0x1269231e2fee34a9b117d47a347eaecea40babcf = 'HelloWorld;2021-07-19 21:57:01;54'
-        let sp: Vec<&str> = raw.split(";").collect();
-        let name = sp.get(0).unwrap();
+        let sp: Vec<&str> = raw.split(';').collect();
         ContractRecord {
             address: address.to_string(),
-            name: sp.get(0).unwrap().to_string(),
+            name: sp.first().unwrap().to_string(),
             timestamp: sp.get(1).unwrap().to_string(),
-            blocknum: u64::from_str_radix(sp[2], 10).unwrap(),
+            blocknum: sp[2].parse::<u64>().unwrap(),
         }
     }
     pub fn encode(&self, withaddress: bool) -> String {
         if withaddress {
-            return format!(
+            format!(
                 "{};{};{};{}",
                 self.name, self.timestamp, self.blocknum, self.address
-            );
+            )
         } else {
-            return format!("{};{};{}", self.name, self.timestamp, self.blocknum);
+            format!("{};{};{}", self.name, self.timestamp, self.blocknum)
         }
     }
 
@@ -63,9 +62,9 @@ impl ContractRecord {
             address: address.to_string(),
             name: contract_name.to_string(),
             timestamp: str_datetime,
-            blocknum: blocknum,
+            blocknum,
         };
-        return record.encode(false);
+        record.encode(false)
     }
 }
 
@@ -141,11 +140,11 @@ impl ContractHistory {
                 return Ok(v.to_string());
             }
         }
-        return kisserr!(
+        kisserr!(
             KissErrKind::Error,
             "contract latest history not found {}",
             contract_name
-        );
+        )
     }
     pub fn find_record_by_address(
         &self,
@@ -169,8 +168,7 @@ impl ContractHistory {
         )
     }
     pub fn history_file(path: &str) -> String {
-        let chfile = format!("{}/contracthistory.toml", path);
-        return chfile;
+        format!("{}/contracthistory.toml", path)
     }
 
     pub fn save_to_file(
@@ -209,10 +207,10 @@ impl ContractHistory {
                 let addr =
                     ContractHistory::get_last_from_file(fullfilepath, segment, contract_name)?;
                 printlnex!("get from history addr is [{}]", &addr);
-                return Ok(addr);
+                Ok(addr)
             }
-            _ => return Ok(addressinput.to_string()),
-        };
+            _ => Ok(addressinput.to_string()),
+        }
     }
 }
 #[derive(Serialize, Deserialize, Debug, Default, Clone)]

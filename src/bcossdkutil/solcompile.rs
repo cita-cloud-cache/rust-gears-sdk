@@ -44,7 +44,7 @@ pub fn sol_compile(contract_name: &str, configfile: &str) -> Result<Output, Kiss
         options
     );
     let outputres = Command::new(solc_path)
-        .args(&options)
+        .args(options)
         .arg("-o")
         .arg(config.common.contractpath.as_str())
         .arg(solfullpath.to_str().unwrap())
@@ -65,15 +65,15 @@ pub fn sol_compile(contract_name: &str, configfile: &str) -> Result<Output, Kiss
                     out.status.to_string()
                 );
             }
-            return Ok(out);
+            Ok(out)
         }
         Err(e) => {
-            return kisserr!(
+            kisserr!(
                 KissErrKind::Error,
                 "compile [{}] error :{:?}",
                 contract_name,
                 e
-            );
+            )
         }
     }
 }

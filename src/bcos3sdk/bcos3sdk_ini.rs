@@ -13,7 +13,7 @@ pub struct Bcos3sdkIni {
 impl Bcos3sdkIni {
     pub fn load(config_file: &str) -> Result<Bcos3sdkIni, KissError> {
         let mut sdkini = Bcos3sdkIni {
-            values: toml::Value::String("".to_string()),
+            values: toml::Value::String(String::new()),
             peers: HashMap::new(),
         };
         let confres = Ini::load_from_file(config_file);
@@ -27,7 +27,7 @@ impl Bcos3sdkIni {
         }
         let config = confres.unwrap();
         let peersseg = config.section(Some("peers"));
-        if !peersseg.is_none() {
+        if peersseg.is_some() {
             let peers = peersseg.unwrap();
             for (key, value) in peers.iter() {
                 sdkini.peers.insert(key.to_string(), value.to_string());

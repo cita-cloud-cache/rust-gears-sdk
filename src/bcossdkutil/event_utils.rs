@@ -60,7 +60,7 @@ impl EventABIUtils {
 
     ///根据类型，计算indexed值
     pub fn topic_by_indexed_params(&self, ptype: &ParamType, v: &str) -> String {
-        let mut topicres: String = "".to_string();
+        let mut topicres: String = String::new();
         match ptype {
             ParamType::String => {
                 //算hash并补全
@@ -133,11 +133,10 @@ impl EventABIUtils {
             0
         } else {
             // verify
-            let eventsig_topic = topics.get(0).ok_or(KissError::new(
-                KissErrKind::EFormat,
-                -1,
-                format!("miss sig").as_str(),
-            ))?;
+            let eventsig_topic =
+                topics
+                    .get(0)
+                    .ok_or(KissError::new(KissErrKind::EFormat, -1, "miss sig"))?;
             let evsig = self.event_signature(event);
             if eventsig_topic != &evsig {
                 return kisserr!(KissErrKind::Error, "Invalidata wrong signature");
@@ -167,10 +166,7 @@ impl EventABIUtils {
             return kisserr!(KissErrKind::Error, "Invalidata wrong signature");
         }
 
-        let topics_named_tokens = topic_params
-            .into_iter()
-            .map(|p| p.name)
-            .zip(topic_tokens.into_iter());
+        let topics_named_tokens = topic_params.into_iter().map(|p| p.name).zip(topic_tokens);
 
         let data_types = data_params
             .iter()
@@ -183,10 +179,7 @@ impl EventABIUtils {
             Err(e) => return kisserr!(KissErrKind::EFormat, "decode data_types error {:?}", e),
         };
 
-        let data_named_tokens = data_params
-            .into_iter()
-            .map(|p| p.name)
-            .zip(data_tokens.into_iter());
+        let data_named_tokens = data_params.into_iter().map(|p| p.name).zip(data_tokens);
 
         let named_tokens = topics_named_tokens
             .chain(data_named_tokens)

@@ -12,9 +12,9 @@
 //将rust的str转成C指针
 #[macro_export]
 macro_rules! str2p {
-    ($x:expr) => {
-        CString::new($x).unwrap().as_ptr() as *const c_char
-    };
+    ($x:expr) => {{
+        CString::new($x).unwrap().into_raw() as *const c_char
+    }};
 }
 
 /// Global flag of enabling debug output.
@@ -25,7 +25,7 @@ pub static mut ENABLE_BCOSSDK_DEBUG_PRINTLNEX: bool = false;
 macro_rules! printlnex {
             () => ( print!("\n"));
             ($($arg:tt)*) => {
-            if crate::bcossdkutil::macrodef::is_debugprint() {
+            if $crate::bcossdkutil::macrodef::is_debugprint() {
                       print!("{}:{}:", file!(), line!());
                       println!($($arg)*);
             }

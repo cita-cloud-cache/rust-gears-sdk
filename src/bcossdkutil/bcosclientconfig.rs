@@ -25,9 +25,10 @@ use toml;
 use crate::bcossdkutil::fileutils;
 use crate::bcossdkutil::kisserror::{KissErrKind, KissError};
 
-#[derive(Deserialize, Debug, Clone, Eq, PartialEq)]
+#[derive(Default, Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum BcosCryptoKind {
     GM,
+    #[default]
     ECDSA,
 }
 #[derive(Deserialize, Debug, Clone, Eq, PartialEq)]
@@ -35,12 +36,6 @@ pub enum BcosClientProtocol {
     RPC,
     CHANNEL,
     BCOS3,
-}
-
-impl BcosCryptoKind {
-    pub fn default() -> Self {
-        BcosCryptoKind::ECDSA
-    }
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -52,8 +47,8 @@ pub struct Bcos2ChainConfig {
 //unsafe impl Send for ChainConfig{}
 //unsafe impl Sync for ChainConfig{}
 
-impl Bcos2ChainConfig {
-    pub fn default() -> Self {
+impl Default for Bcos2ChainConfig {
+    fn default() -> Self {
         Bcos2ChainConfig {
             chainid: 1,
             groupid: 1,
@@ -63,15 +58,15 @@ impl Bcos2ChainConfig {
 }
 
 //Bcos3的相关配置
-#[derive(Deserialize, Debug, Default, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Bcos3Config {
     // C语言SDK所用的配置文件，全目录或相对目录，包含文件名，如"./bcos3sdklib/bcos3_sdk_config.ini"
     pub sdk_config_file: String,
     pub group: String,
 }
 
-impl Bcos3Config {
-    pub fn default() -> Self {
+impl Default for Bcos3Config {
+    fn default() -> Self {
         Bcos3Config {
             sdk_config_file: "./bcos3sdklib/bcos3_sdk_config.ini".to_string(),
             group: "group0".to_string(),
@@ -80,7 +75,7 @@ impl Bcos3Config {
 }
 
 //rpc连接方式的配置
-#[derive(Deserialize, Debug, Default, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct RpcConfig {
     pub url: String,
     pub timeout: u32, //in sec
@@ -89,10 +84,10 @@ pub struct RpcConfig {
 unsafe impl Send for RpcConfig {}
 unsafe impl Sync for RpcConfig {}
 
-impl RpcConfig {
-    pub fn default() -> Self {
+impl Default for RpcConfig {
+    fn default() -> Self {
         RpcConfig {
-            url: "".to_string(),
+            url: String::new(),
             timeout: 10,
         }
     }
@@ -119,10 +114,10 @@ pub struct ChannelConfig {
 unsafe impl Send for ChannelConfig {}
 unsafe impl Sync for ChannelConfig {}
 
-impl ChannelConfig {
-    pub fn default() -> Self {
+impl Default for ChannelConfig {
+    fn default() -> Self {
         ChannelConfig {
-            ip: "".to_string(),
+            ip: String::new(),
             port: 0,
             tlskind: BcosCryptoKind::ECDSA,
             nativelib_echo_mode: 0,
@@ -192,7 +187,7 @@ impl ClientConfig {
                 }
             }
             Err(e) => {
-                return kisserr!(
+                kisserr!(
                     KissErrKind::Error,
                     "load config error {},{:?}",
                     config_file,

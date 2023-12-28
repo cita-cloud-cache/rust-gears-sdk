@@ -38,12 +38,12 @@ pub fn detect_os() -> OSKind {
     if cfg!(target_os = "macos") {
         return OSKind::macos;
     }
-    return OSKind::linux;
+    OSKind::linux
 }
 
 pub fn is_windows() -> bool {
     if detect_os() == OSKind::windows {
         return true;
     }
-    return false;
+    false
 }

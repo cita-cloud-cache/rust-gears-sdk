@@ -43,9 +43,10 @@ macro_rules! kisserrcode {
 }
 
 //Kiss: Keep It Simple & Stupid
-#[derive(Fail, Clone, Debug, Eq, PartialEq)]
+#[derive(Fail, Clone, Debug, Eq, PartialEq, Default)]
 pub enum KissErrKind {
     #[fail(display = "error")]
+    #[default]
     Error,
     #[fail(display = "Argument is invalid")]
     EArgument,
@@ -69,12 +70,6 @@ pub enum KissErrKind {
     EFileRead,
 }
 
-impl Default for KissErrKind {
-    fn default() -> Self {
-        KissErrKind::Error
-    }
-}
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct KissError {
     pub kind: KissErrKind,
@@ -85,15 +80,15 @@ pub struct KissError {
 impl KissError {
     pub fn err(kind: KissErrKind) -> KissError {
         KissError {
-            kind: kind,
+            kind,
             code: 0,
-            msg: "".to_string(),
+            msg: String::new(),
         }
     }
     pub fn new(kind: KissErrKind, code: i64, msg: &str) -> KissError {
         KissError {
-            kind: kind,
-            code: code,
+            kind,
+            code,
             msg: msg.to_string(),
         }
     }
@@ -124,10 +119,7 @@ pub fn test_bcos_error() {
     }
 
     let rr = test_enum_error();
-    match rr {
-        Err(e) => {
-            println!("{:?}", e.as_fail().cause());
-        }
-        _ => {}
+    if let Err(e) = rr {
+        println!("{:?}", e.as_fail().cause());
     }
 }

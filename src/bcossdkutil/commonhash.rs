@@ -47,20 +47,13 @@ pub struct CommonHash {
 impl CommonHash {
     ///因为这里的hash实现设计目的是可以切换多种hash算法，包括国密，非国密，keccak以及其他等，要求调用方传入type
     /// 之所以不采用全局的设置，是考虑到兼容在同一个进程里不同的调用者会使用不同的算法
-    pub fn hash(data: &Vec<u8>, hashtype: &HashType) -> Vec<u8> {
+    pub fn hash(data: &[u8], hashtype: &HashType) -> Vec<u8> {
         printlnex!("Using HashType {:?}", hashtype);
         match hashtype {
-            HashType::WEDPR_KECCAK => {
-                let msg_hash = WEDPR_KECCAK256.hash(data.as_slice());
-                msg_hash
-            }
-            HashType::WEDRP_SM3 => {
-                let msg_hash = WEDPR_SM3.hash(data.as_slice());
-                //printlnex!("msg_hash: {:?}",msg_hash);
-                msg_hash
-            }
+            HashType::WEDPR_KECCAK => WEDPR_KECCAK256.hash(data),
+            HashType::WEDRP_SM3 => WEDPR_SM3.hash(data),
             HashType::KECCAK => {
-                let keccakhash = keccak(&data);
+                let keccakhash = keccak(data);
                 Vec::from(keccakhash.as_bytes())
             }
             HashType::Unknow => {
@@ -70,9 +63,9 @@ impl CommonHash {
         }
     }
 
-    pub fn hash_to_h256(data: &Vec<u8>, hashtype: &HashType) -> H256 {
+    pub fn hash_to_h256(data: &[u8], hashtype: &HashType) -> H256 {
         let hash = CommonHash::hash(data, hashtype);
-        let h256 = H256::from_slice(&hash.as_slice());
+        let h256 = H256::from_slice(hash.as_slice());
         h256
     }
 
@@ -80,11 +73,11 @@ impl CommonHash {
         match crypto {
             BcosCryptoKind::ECDSA => {
                 //一定要先设置hash算法，这是基础中的基础
-                return HashType::WEDPR_KECCAK;
+                HashType::WEDPR_KECCAK
             }
             BcosCryptoKind::GM => {
                 //一定要先设置hash算法，这是基础中的基础
-                return HashType::WEDRP_SM3;
+                HashType::WEDRP_SM3
             }
         }
     }

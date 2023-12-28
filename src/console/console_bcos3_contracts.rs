@@ -56,7 +56,7 @@ pub fn deploy(cli: &Cli) -> Result<(), KissError> {
     );
     let res = bcos3client.deploy_withparam(contractname.as_str(), &params)?;
     //println!("deploy transaction return :{:?}",&res);
-    let hash = res["contractAddress"].as_str().unwrap().clone().to_string();
+    let hash = res["contractAddress"].as_str().unwrap().to_string();
 
     let address = res["contractAddress"].as_str().unwrap();
     let blocknum = liteutils::json_u64(&res, "blockNumber", -1);
@@ -83,7 +83,7 @@ pub fn sendtx(cli: &Cli) -> Result<(), KissError> {
     println!("-------------------------------------");
     //将cmd和param拼在一起，作为新的args，给到StructOpt去解析（因为第一个参数总是app名）
     let mut cmdparams: Vec<String> = vec![cli.cmd.clone()];
-    cmdparams.append(&mut cli.params.clone());
+    cmdparams.extend_from_slice(&cli.params);
     let opt: OptContract = StructOpt::from_iter(cmdparams.iter());
 
     let contractdir = "contracts";
@@ -143,7 +143,7 @@ pub fn call(cli: &Cli) -> Result<(), KissError> {
 
     //将cmd和param拼在一起，作为新的args，给到StructOpt去解析（因为第一个参数总是app名）
     let mut cmdparams: Vec<String> = vec![cli.cmd.clone()];
-    cmdparams.append(&mut cli.params.clone());
+    cmdparams.extend_from_slice(&cli.params);
     let opt: OptContract = StructOpt::from_iter(cmdparams.iter());
     let contractdir = "contracts";
     let contractfullname = format!("{}/{}.abi", contractdir, &opt.contract_name);

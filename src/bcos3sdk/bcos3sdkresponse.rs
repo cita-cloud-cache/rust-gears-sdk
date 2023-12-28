@@ -54,8 +54,8 @@ impl Bcos3SDKResponse {
     //将c sdk返回的指针数据，“安全的”转成rust的数据结构
     pub fn from_callback(c_sdk_response: *const bcos_sdk_c_struct_response) -> Bcos3SDKResponse {
         unsafe {
-            let mut strdata = "".to_string();
-            let mut strdesc = "".to_string();
+            let mut strdata = String::new();
+            let mut strdesc = String::new();
 
             //println!("has response {} | {}",strdata,strdesc);
             let size = (*c_sdk_response).size;
@@ -69,7 +69,7 @@ impl Bcos3SDKResponse {
             }
 
             if !(*c_sdk_response).desc.is_null() {
-                strdesc = CStr::from_ptr((*c_sdk_response).desc.clone())
+                strdesc = CStr::from_ptr((*c_sdk_response).desc)
                     .to_str()
                     .unwrap()
                     .to_string();
@@ -77,14 +77,13 @@ impl Bcos3SDKResponse {
             }
 
             //println!("has response {} | {}",strdata,strdesc);
-            let response = Bcos3SDKResponse {
+            Bcos3SDKResponse {
                 desc: strdesc,
                 data: strdata,
                 error: (*c_sdk_response).error,
                 size: (*c_sdk_response).size,
                 context_pointer: (*c_sdk_response).context,
-            };
-            response
+            }
         }
     }
 
@@ -102,25 +101,20 @@ impl Bcos3SDKResponse {
                     None => {
                         let error_in_response = jsonvalue.get("error");
                         match error_in_response {
-                            None => {
-                                return Ok(jsonvalue);
-                                //return kisserr!(KissErrKind::EFormat,"result json is empty");
-                            }
+                            None => Ok(jsonvalue),
                             Some(err_result) => {
                                 println!("err_result {:?}", err_result);
                                 let errcode = err_result["code"].as_i64().unwrap();
                                 let errmsg = err_result["message"].as_str().unwrap();
-                                return kisserrcode!(KissErrKind::Error, errcode, "{}", errmsg);
+                                kisserrcode!(KissErrKind::Error, errcode, "{}", errmsg)
                             }
                         }
                     }
-                    Some(v) => {
-                        return Ok(v.clone());
-                    }
+                    Some(v) => Ok(v.clone()),
                 }
             }
             Err(e) => {
-                return kisserr!(KissErrKind::EFormat, "json format: {:?}", e);
+                kisserr!(KissErrKind::EFormat, "json format: {:?}", e)
             }
         }
     }

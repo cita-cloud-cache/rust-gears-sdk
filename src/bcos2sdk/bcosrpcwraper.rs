@@ -41,7 +41,7 @@ impl RpcRequestData {
         RpcRequestData {
             jsonrpc: "2.0".to_string(),
             id: 1,
-            method: "".to_string(),
+            method: String::new(),
             params: json! {[1]},
         }
     }
@@ -89,26 +89,26 @@ impl BcosRPC {
         if config.bcos2.protocol == BcosClientProtocol::CHANNEL {
             channel_client = BcosChannelClient::new(&config.channel)?;
         } else {
-            channel_client = BcosChannelClient::default(&config.channel);
+            channel_client = BcosChannelClient::default_ssl(&config.channel);
             printlnex!("done channel_client");
         }
         Ok(BcosRPC {
             config: config.clone(),
-            jsonrpc_client: jsonrpc_client,
-            channel_client: channel_client,
+            jsonrpc_client,
+            channel_client,
         })
     }
 
     pub fn finish(&mut self) {
         self.channel_client.finish();
     }
-    pub fn switch_rpc_request_sync(&mut self, outbuffer: &String) -> Result<String, KissError> {
+    pub fn switch_rpc_request_sync(&mut self, outbuffer: &str) -> Result<String, KissError> {
         //let mut response_text =String::default();
         match self.config.bcos2.protocol {
-            BcosClientProtocol::RPC => self.jsonrpc_client.request_sync(&outbuffer),
-            BcosClientProtocol::CHANNEL => self.channel_client.request_sync(&outbuffer),
+            BcosClientProtocol::RPC => self.jsonrpc_client.request_sync(outbuffer),
+            BcosClientProtocol::CHANNEL => self.channel_client.request_sync(outbuffer),
             _ => {
-                return kisserr!(
+                kisserr!(
                     KissErrKind::EArgument,
                     "unhandled protocal {:?}",
                     self.config.bcos2.protocol
@@ -148,12 +148,12 @@ impl BcosRPC {
                     responsebuffer,
                     e
                 );
-                return kisserr!(
+                kisserr!(
                     KissErrKind::EFormat,
                     "parse json rpc response json error {},{:?}",
                     responsebuffer,
                     e
-                );
+                )
             }
         }
     }

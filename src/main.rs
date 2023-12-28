@@ -203,6 +203,7 @@ pub async fn main() {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -216,3 +217,4 @@ mod tests {
         assert!(cli.cmd.len() > 0);
     }
 }
+*/

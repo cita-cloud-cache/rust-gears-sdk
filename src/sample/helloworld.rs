@@ -117,7 +117,7 @@ pub fn demo(configfile: &str) {
     );
 
     let callvalue = bcossdk
-        .call(&contract, &to_address, "get", &["".to_string()])
+        .call(&contract, &to_address, "get", &[String::new()])
         .unwrap();
     let output = callvalue["result"]["output"].as_str().unwrap();
 

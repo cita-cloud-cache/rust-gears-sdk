@@ -46,8 +46,8 @@ pub struct BcosTransaction {
     pub hashtype: HashType, //由调用者制定hash函数的类型
 }
 
-impl BcosTransaction {
-    pub fn default() -> BcosTransaction {
+impl Default for BcosTransaction {
+    fn default() -> BcosTransaction {
         BcosTransaction {
             random_id: U256::default(),
             gas_price: U256::default(),
@@ -62,7 +62,9 @@ impl BcosTransaction {
             hashtype: HashType::Unknow, //由调用者制定hash函数的类型
         }
     }
+}
 
+impl BcosTransaction {
     pub fn rlp_append_tx_elements(&self, stream: &mut RlpStream) {
         stream.append(&self.random_id);
         stream.append(&self.gas_price);
@@ -132,8 +134,8 @@ impl BcosTransactionWithSig {
         encodebytes
     }
 
-    pub fn decode_bytes(txbyes: &Vec<u8>) -> Result<BcosTransactionWithSig, DecoderError> {
-        BcosTransactionWithSig::decode_rlp(&Rlp::new(&txbyes.as_slice()))
+    pub fn decode_bytes(txbyes: &[u8]) -> Result<BcosTransactionWithSig, DecoderError> {
+        BcosTransactionWithSig::decode_rlp(&Rlp::new(txbyes))
     }
 
     pub fn rlp_append_signature(&self, stream: &mut RlpStream) {
@@ -157,9 +159,9 @@ impl BcosTransactionWithSig {
             printlnex!("append v {:?}", hex::encode(h512v.as_bytes()));
             stream.append(&h512v);
         }
-        let h256r = H256::from_slice(&self.signature.r.as_slice());
+        let h256r = H256::from_slice(self.signature.r.as_slice());
         stream.append(&h256r);
-        let h256s: H256 = H256::from_slice(&self.signature.s.as_slice());
+        let h256s: H256 = H256::from_slice(self.signature.s.as_slice());
         stream.append(&h256s);
     }
 
@@ -178,7 +180,7 @@ impl BcosTransactionWithSig {
             let r: Vec<u8> = d.val_at(11)?;
             let s: Vec<u8> = d.val_at(12)?;
 
-            signature = CommonSignature { v: v, r: r, s: s };
+            signature = CommonSignature { v, r, s };
             is_signed = true;
         }
         Ok(BcosTransactionWithSig {
@@ -217,7 +219,7 @@ fn test_decode_tx_from_str(tx_data: &str) {
 
 ///地址转码的helper,当传入地址为空时,直接反回空数组,否则转一下Address(其实就是hexdecode)
 pub fn encode_address(addr: &str) -> Vec<u8> {
-    if addr.trim().len() == 0 {
+    if addr.trim().is_empty() {
         return Vec::from(addr);
     }
 
@@ -229,9 +231,9 @@ pub fn encode_address(addr: &str) -> Vec<u8> {
 
 ///一个简单的工具方法，先保留，严格来说传入的参数是不够的。
 pub fn encode_raw_transaction(
-    to_address: &String,
-    rawdata: &String,
-    key: &Vec<u8>,
+    to_address: &str,
+    rawdata: &str,
+    key: &[u8],
     hashtype: HashType,
 ) -> Vec<u8> {
     let randid: u64 = rand::random();
@@ -243,7 +245,7 @@ pub fn encode_raw_transaction(
         gas_limit: U256::from(30000000),
         block_limit: U256::from(501),
         value: U256::from(0),
-        data: hex::decode(rawdata.as_str()).unwrap(),
+        data: hex::decode(rawdata).unwrap(),
         fisco_chain_id: U256::from(1),
         group_id: U256::from(1),
         extra_data: b"".to_vec(),
@@ -254,8 +256,7 @@ pub fn encode_raw_transaction(
     let mut signer = CommonSignerWeDPR_Secp256::default();
     signer.key_from_bytes(key);
     let t = BcosTransactionWithSig::sign(&signer, &tx);
-    let tx = t.unwrap().encode();
-    tx
+    t.unwrap().encode()
 }
 
 ///测试代码入口

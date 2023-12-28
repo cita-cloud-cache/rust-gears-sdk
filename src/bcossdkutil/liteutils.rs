@@ -24,43 +24,18 @@ pub fn datetime_str() -> String {
 }
 
 pub fn json_u64(jsonv: &JsonValue, name: &str, defaultvalue: i64) -> i64 {
-    let v_option = jsonv.get(name);
-    match v_option {
-        Some(v) => {
-            let u_option = v.as_u64();
-            match u_option {
-                Some(num) => {
-                    return num as i64;
-                }
-                None => {
-                    return defaultvalue;
-                }
-            }
-        }
-        None => {
-            return defaultvalue;
-        }
-    }
+    jsonv
+        .get(name)
+        .and_then(|v| v.as_i64())
+        .unwrap_or(defaultvalue)
 }
 
 pub fn json_str(jsonv: &JsonValue, name: &str, defaultvalue: &str) -> String {
-    let v_option = jsonv.get(name);
-    match v_option {
-        Some(v) => {
-            let s_option = v.as_str();
-            match s_option {
-                Some(s) => {
-                    return s.to_string();
-                }
-                None => {
-                    return defaultvalue.to_string();
-                }
-            }
-        }
-        None => {
-            return defaultvalue.to_string();
-        }
-    }
+    jsonv
+        .get(name)
+        .and_then(|v| v.as_str())
+        .map(|s| s.to_string())
+        .unwrap_or(defaultvalue.to_string())
 }
 
 pub fn trim_quot(inputstr: &str) -> String {
@@ -74,12 +49,7 @@ pub fn trim_quot(inputstr: &str) -> String {
 }
 
 pub fn get_opt_str(nameopt: &Option<String>) -> String {
-    match nameopt {
-        Some(v) => {
-            return v.clone();
-        }
-        None => return "".to_string(),
-    }
+    nameopt.as_ref().map_or(String::new(), |v| v.clone())
 }
 
 ///对较为复杂的输入参数，用split分割不可行， split_param支持以下格式
@@ -100,7 +70,7 @@ pub fn split_param(paramstr: &str) -> Vec<String> {
     let mut arrayres: Vec<String> = Vec::new();
     let splitter = ',';
     let mut oldstatus = 0;
-    let mut item: String = "".to_string();
+    let mut item: String = String::new();
     let mut stopchar: char = '\0';
     let mut itemcounter = 0; //为了当前的item，处理了多少个字符，会大于item.len(),因为其中可能有转义字符
     for c in paramstr.chars() {
@@ -115,7 +85,7 @@ pub fn split_param(paramstr: &str) -> Vec<String> {
                 // 遇到分隔符,
                 //rintln!("splitter");
                 arrayres.push(trim_quot(item.as_str()));
-                item = "".to_string();
+                item = String::new();
                 continue;
             }
             //当 ",',[等出现在当前要处理这一段字符串的首位，如 "abc 则命中",但a"bc，就不管”了，把他当做字符串的一部分

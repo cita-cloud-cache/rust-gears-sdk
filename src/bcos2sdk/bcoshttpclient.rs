@@ -38,9 +38,9 @@ impl HttpJsonRpcClient {
         let mut headers = HeaderMap::new();
         headers.insert("Content-Type", "application/json".parse().unwrap());
         HttpJsonRpcClient {
-            target_url: "".to_string(),
+            target_url: String::new(),
             timeout: 10,
-            headers: headers,
+            headers,
         }
     }
     pub fn set_target(&mut self, target_url: &str) {

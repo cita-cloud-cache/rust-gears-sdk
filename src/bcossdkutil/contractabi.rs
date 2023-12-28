@@ -87,25 +87,19 @@ impl ContractABI {
         //printlnex!("try load contract file {}", filename);
         let abiparser = ABIParser::load(filename)?;
         let contractfile_result = File::open(filename);
-        match &contractfile_result {
-            Err(e) => {
-                return kisserr!(
-                    KissErrKind::EFormat,
-                    "load abi file {} error : {:?}",
-                    filename,
-                    e
-                );
-            }
-            _ => {}
+        if let Err(e) = &contractfile_result {
+            return kisserr!(
+                KissErrKind::EFormat,
+                "load abi file {} error : {:?}",
+                filename,
+                e
+            );
         }
 
         let contractfile = contractfile_result.unwrap();
         let contact_result = Contract::load(contractfile);
-        match contact_result {
-            Err(e) => {
-                return kisserr!(KissErrKind::EFormat, "parse abi file error: {:?}", e);
-            }
-            _ => {}
+        if let Err(e) = contact_result {
+            return kisserr!(KissErrKind::EFormat, "parse abi file error: {:?}", e);
         }
         let contract_obj = contact_result.unwrap();
         let mut contract = ContractABI {
@@ -115,8 +109,8 @@ impl ContractABI {
             event_hash_map: HashMap::new(),
             func_selector_map: HashMap::new(),
             hashtype: hashtype.clone(),
-            event_abi_utils: EventABIUtils::new(&hashtype),
-            abiparser: abiparser,
+            event_abi_utils: EventABIUtils::new(hashtype),
+            abiparser,
         };
         contract.map_event_to_hash();
         contract.map_function_to_selector();
@@ -126,7 +120,7 @@ impl ContractABI {
 
     ///这个方法算hash时，会带上返回值类型一起算，如 set(String):(int256)
     pub fn function_signature_to_4byte_selector(func: &Function) -> Option<Vec<u8>> {
-        let signature = func.signature().replace(" ", "");
+        let signature = func.signature().replace(' ', "");
         //println!("4bytes: {}",signature);
         let selectorhash = keccak(signature.as_bytes());
         let selector = selectorhash.as_bytes()[0..4].to_vec();
@@ -163,8 +157,8 @@ impl ContractABI {
         }
     }
 
-    pub fn find_func_by_selector(&self, selector: &Vec<u8>) -> Option<&Function> {
-        let getresult = self.func_selector_map.get(&*selector);
+    pub fn find_func_by_selector(&self, selector: &[u8]) -> Option<&Function> {
+        let getresult = self.func_selector_map.get(selector);
         //println!("find_func_by_selector {:?}",getresult);
         getresult
     }
@@ -180,7 +174,7 @@ impl ContractABI {
         }*/
         //采用自实现的abiparser解析器里的event方法，eth-abi-12里的event算法对tuple支持不全
         for event in self.abiparser.events.as_slice() {
-            let hash = self.event_abi_utils.event_signature(&event);
+            let hash = self.event_abi_utils.event_signature(event);
             self.event_hash_map.insert(hash, event.clone());
             self.event_name_map
                 .insert(event.name.clone(), event.clone());
@@ -277,7 +271,7 @@ impl ContractABI {
         //println!("{}",hex::encode(&code));
         let result = cons.encode_input(code, &tokens)?;
         //println!("{}",hex::encode(&result));
-        Ok(hex::encode(&result))
+        Ok(hex::encode(result))
     }
     pub fn collect_function_paramtypes(func: &Function) -> Vec<Box<ParamType>> {
         func.inputs
@@ -301,9 +295,9 @@ impl ContractABI {
         tokens: &[Token],
         hashtype: &HashType,
     ) -> Result<Bytes, KissError> {
-        let params: Vec<Box<ParamType>> = ContractABI::collect_function_paramtypes(&func);
+        let params: Vec<Box<ParamType>> = ContractABI::collect_function_paramtypes(func);
         //println!("encode_func_input_tokens param: {:?}",params);
-        if !ContractABI::types_check(tokens, &params.as_slice()) {
+        if !ContractABI::types_check(tokens, params.as_slice()) {
             return kisserr!(
                 KissErrKind::EFormat,
                 "encode_func_input_tokens types_check error"
@@ -311,7 +305,7 @@ impl ContractABI {
         }
         let signed = ContractABI::function_short_signature(func, hashtype).to_vec();
         let encoded = ethabi::encode(tokens);
-        Ok(signed.into_iter().chain(encoded.into_iter()).collect())
+        Ok(signed.into_iter().chain(encoded).collect())
     }
     //传入字符串类型的参数列表，编码成abi
     pub fn encode_function_input_to_abi(
@@ -328,7 +322,7 @@ impl ContractABI {
             &tokens,
             &self.hashtype,
         )?;
-        Ok(hex::encode(&res))
+        Ok(hex::encode(res))
     }
 
     //传入的是字符串，转换成token
@@ -401,7 +395,7 @@ impl ContractABI {
         datainput: &str,
     ) -> anyhow::Result<Vec<Token>> {
         let data = datainput.trim_start_matches("0x");
-        let data: Vec<u8> = hex::decode(&data)?;
+        let data: Vec<u8> = hex::decode(data)?;
         let tokens = function.decode_output(&data)?;
         Ok(tokens)
     }
@@ -420,7 +414,7 @@ impl ContractABI {
                     Ok(input) => {
                         let parse_result = function_input {
                             func: fun.clone(),
-                            input: input,
+                            input,
                         };
                         Ok(parse_result)
                     }
@@ -482,7 +476,7 @@ impl ContractABI {
                 Some(e) => {
                     //println!("event abi is {:?}",e);
                     //println!("the raw log: {:?}",rawlog);
-                    let parse_result = self.event_abi_utils.parse_log(&e, rawlog);
+                    let parse_result = self.event_abi_utils.parse_log(e, rawlog);
                     printlnex!("log parse result: eventname:{}: {:?}", e.name, parse_result);
                     match parse_result {
                         Ok(log) => {
@@ -504,16 +498,14 @@ impl ContractABI {
 
     ///将数组（类型必须是string，如果是其他类型，先转换成string数组），拼接成类似["aa","bb","cc"]这样的格式
     ///合约接口中，如输入的是类似string[] data, uint256[] values这样的参数，则接受类似的数组
-    pub fn array_to_param(x: &Vec<String>) -> String {
-        let mut allstr: String = format!("[");
-        let mut i = 0;
-        for s in x.iter() {
+    pub fn array_to_param(x: &[String]) -> String {
+        let mut allstr: String = "[".to_string();
+        for (i, s) in x.iter().enumerate() {
             if i == 0 {
                 allstr = format!("{}\"{}\"", allstr, s);
             } else {
                 allstr = format!("{},\"{}\"", allstr, s);
             }
-            i += 1;
         }
         allstr = format!("{}]", allstr);
         allstr
@@ -598,7 +590,7 @@ pub fn test_parse_tx_input() {
             println!("parseresult : {:?}", parseresult);
             for t in parseresult.iter() {
                 println!("{}", input_result.func.name);
-                println!("{}", t.to_string());
+                println!("{}", t);
             }
         }
         Err(e) => {
